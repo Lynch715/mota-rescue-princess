@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0b14">
+<title>魔塔 · 拯救公主</title>
+<style>
+  :root{ --bg:#0d0b14; --panel:#1a1626; --border:#3a3152; --gold:#f0c040; --text:#d8d2e8;
+         --cw:440px; --pad:12px; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--bg);color:var(--text);font-family:"Courier New",monospace;
+    -webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+
+  /* ---------- 布局:游戏区 / 状态区 / 操作区 三块,按屏幕重排 ---------- */
+  #wrap{display:grid;gap:12px;justify-content:center;align-content:start;
+    grid-template-columns:auto minmax(190px,220px);
+    grid-template-areas:"game hud" "game ctrl";
+    padding:max(var(--pad),env(safe-area-inset-top)) max(var(--pad),env(safe-area-inset-right))
+            max(var(--pad),env(safe-area-inset-bottom)) max(var(--pad),env(safe-area-inset-left));}
+  #gameBox{grid-area:game;position:relative;line-height:0;}
+  #hud{grid-area:hud;}
+  #controls{grid-area:ctrl;}
+  #hud,#controls{background:var(--panel);border:4px solid var(--border);
+    padding:10px;font-size:14px;line-height:1.4;width:100%;}
+  canvas#cv{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
+    border:4px solid var(--border);background:#000;touch-action:none;
+    width:calc(var(--cw) + 8px);height:calc(var(--cw) + 8px);}
+
+  #hud h1{font-size:18px;color:var(--gold);text-align:center;letter-spacing:4px;margin-bottom:8px;}
+  .stat{display:flex;justify-content:space-between;padding:3px 2px;border-bottom:1px dashed #2c2542;}
+  .stat b{color:#fff;font-weight:normal;}
+  .hp b{color:#ff6a6a;} .atk b{color:#ffb054;} .def b{color:#6ab8ff;} .gold b{color:var(--gold);}
+  #hpbar{height:6px;background:#3a1a1a;margin:4px 0 2px;border:1px solid #2c2542;}
+  #hpfill{height:100%;background:#e04848;width:100%;transition:width .18s;}
+  #keys{display:flex;justify-content:space-around;margin:8px 0;}
+  .keyItem{text-align:center;font-size:13px;}
+  .kY{color:#f0c040;} .kB{color:#5aa0ff;} .kR{color:#ff5a5a;}
+  #floorLabel{text-align:center;font-size:16px;color:#b8a8ff;margin:6px 0;}
+  #msg{min-height:52px;font-size:12px;color:#a8e8a0;margin-top:6px;line-height:1.5;
+    border-top:1px solid #2c2542;padding-top:6px;overflow-wrap:anywhere;}
+  .btnRow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  button{flex:1;background:#2a2340;color:var(--text);border:2px solid var(--border);
+    font-family:inherit;font-size:12px;padding:6px 4px;cursor:pointer;min-width:56px;
+    -webkit-appearance:none;appearance:none;touch-action:manipulation;}
+  button:hover:not(:disabled){background:#3a3152;color:#fff;}
+  button:active:not(:disabled){background:#4a4068;color:#fff;}
+  button:disabled{opacity:.35;cursor:default;}
+
+  /* ---------- 覆盖层 ---------- */
+  .overlay{position:absolute;inset:0;background:rgba(8,6,14,.94);display:none;line-height:1.5;
+    flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;z-index:10;}
+  .overlay.show{display:flex;}
+  .overlay h2{color:var(--gold);font-size:24px;letter-spacing:6px;margin-bottom:14px;}
+  .overlay p{font-size:14px;line-height:1.9;max-width:360px;}
+  .overlay .tip{color:#8a80a8;font-size:12px;margin-top:12px;}
+  .overlay button{flex:none;margin-top:14px;padding:8px 22px;font-size:14px;}
+  #manual{overflow-y:auto;justify-content:flex-start;padding-top:14px;}
+  .tabs{display:flex;gap:6px;margin-bottom:8px;}
+  .tabs button{margin:0;padding:4px 14px;font-size:12px;}
+  .tabs button.on{background:#3a3152;color:var(--gold);border-color:var(--gold);}
+  .mrow{display:flex;align-items:center;gap:8px;width:100%;max-width:410px;
+    border-bottom:1px solid #2c2542;padding:5px 0;font-size:11px;text-align:left;}
+  .mrow canvas{border:none;background:transparent;flex:none;}
+  .mrow .mname{width:66px;color:#fff;flex:none;}
+  .mrow .mab{flex:none;width:74px;font-size:10px;}
+  .mrow .mab i{font-style:normal;margin-right:3px;}
+  .mrow .mdmg{margin-left:auto;text-align:right;flex:none;}
+  .dmg-safe{color:#7ae87a;} .dmg-mid{color:#ffd054;} .dmg-high{color:#ff9040;} .dmg-dead{color:#ff5050;}
+  #shop .srow{margin-top:10px;display:flex;gap:8px;}
+  #slots .srow{display:flex;flex-direction:column;gap:8px;width:min(280px,86vw);margin-top:8px;}
+  #slots .srow button{margin:0;font-size:12px;padding:8px;text-align:left;}
+  #tele .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:min(280px,80vw);margin-top:10px;}
+  #tele .tgrid button{margin:0;padding:10px 0;font-size:13px;}
+  #tipTouch{display:none;}
+
+  /* ---------- 方向键 ---------- */
+  #dpad{display:none;margin-top:10px;}
+  body.showpad #dpad{display:block;}
+  #dpad .drow{display:flex;justify-content:center;gap:6px;margin-top:6px;}
+  #dpad button{flex:none;width:64px;height:48px;font-size:20px;min-height:0;padding:0;}
+
+  /* ---------- 触摸设备:放大点击目标,换提示文案 ---------- */
+  body.touch button{min-height:44px;}
+  body.touch #dpad button{min-height:0;}
+  body.touch #tipKb{display:none;}
+  body.touch #tipTouch{display:block;}
+
+  /* ---------- 竖屏手机 / 小平板:状态在上,地图居中,操作在下 ---------- */
+  body.stack #wrap{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"hud" "game" "ctrl";justify-items:center;gap:10px;}
+  body.stack #hud,body.stack #controls{width:calc(var(--cw) + 8px);max-width:100%;}
+  body.stack #hud{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 6px;padding:8px 10px;}
+  body.stack #hud h1{display:none;}
+  body.stack #floorLabel{grid-area:1/1/2/5;margin:0;font-size:14px;}
+  body.stack .stat{grid-row:2;flex-direction:column;align-items:center;justify-content:center;
+    gap:0;padding:2px 0;border:none;font-size:10px;}
+  body.stack .stat b{font-size:13px;}
+  body.stack .stat.hp{grid-column:1;} body.stack .stat.atk{grid-column:2;}
+  body.stack .stat.def{grid-column:3;} body.stack .stat.gold{grid-column:4;}
+  body.stack #hpbar{grid-area:3/1/4/5;margin:2px 0;}
+  body.stack #keys{grid-area:4/1/5/5;margin:2px 0 0;}
+  body.stack .keyItem{font-size:11px;}
+  body.stack #msg{grid-area:5/1/6/5;margin:4px 0 0;min-height:30px;font-size:11px;padding-top:4px;}
+  body.stack #controls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;}
+  body.stack #controls .btnRow{display:contents;}
+  body.stack #dpad{grid-column:1/-1;margin-top:2px;}
+  body.stack #dpad button{width:min(84px,26vw);height:56px;font-size:22px;}
+  body.stack .mrow{font-size:10px;gap:5px;max-width:100%;}
+  body.stack .mrow .mname{width:52px;}
+  body.stack .mrow .mab{width:56px;font-size:9px;}
+
+  /* ---------- 横屏手机:地图靠左按高度定尺寸,操作靠右够拇指 ---------- */
+  body.land #wrap{grid-template-columns:auto minmax(150px,180px);gap:8px;--pad:8px;}
+  body.land #hud,body.land #controls{padding:7px;font-size:12px;}
+  body.land #hud h1{display:none;}
+  body.land #floorLabel{font-size:13px;margin:0 0 2px;}
+  body.land .stat{padding:1px 2px;font-size:11px;}
+  body.land #keys{margin:4px 0;}
+  body.land .keyItem{font-size:10px;}
+  body.land #msg{min-height:26px;font-size:10px;margin-top:4px;padding-top:4px;}
+  body.land #controls{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+  body.land #controls .btnRow{display:contents;}
+  body.land button{min-height:38px;font-size:11px;min-width:0;}
+  body.land #dpad{grid-column:1/-1;margin-top:2px;}
+  body.land #dpad button{width:50px;height:38px;font-size:16px;}
+
+  /* ---------- 小屏上覆盖层铺满整屏,避免挤在地图那一小块里 ---------- */
+  body.stack .overlay,body.land .overlay{position:fixed;inset:0;z-index:60;overflow-y:auto;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right))
+            max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
+  body.land .overlay{justify-content:flex-start;}
+  body.land .overlay h2{font-size:19px;margin-bottom:8px;}
+  body.land .overlay p{font-size:12px;line-height:1.6;}
+  body.land .overlay button{margin-top:8px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="gameBox">
+    <canvas id="cv"></canvas>
+    <div class="overlay show" id="intro">
+      <h2>魔 塔</h2>
+      <p>魔王攻陷了王国,将公主囚禁在十二层魔塔之巅。<br><br>
+      勇者啊,持剑而上。<br>钥匙开门,宝石强身,血瓶续命——<br>每一步都要精打细算。<br><br>
+      塔顶,公主在等你。</p>
+      <p class="tip" id="tipKb">方向键 / WASD 移动 · 撞击怪物战斗<br>
+      M 手册 · T 传送 · Ctrl+S 存档 · L 读档 · Esc 关闭</p>
+      <p class="tip" id="tipTouch">在地图上滑动移动 · 也可点格子或用下方方向键<br>
+      撞上怪物即开战 · 长按方向键连续走</p>
+      <button onclick="closeIntro()">进 入 魔 塔</button>
+    </div>
+    <div class="overlay" id="dialog">
+      <p id="dialogText"></p>
+      <button onclick="closeDialog()">继 续</button>
+    </div>
+    <div class="overlay" id="confirm">
+      <h2 style="font-size:20px;letter-spacing:3px;color:#ff6a6a;">危 险</h2>
+      <p id="confirmText"></p>
+      <div class="srow" style="display:flex;gap:10px;">
+        <button onclick="doConfirm()">拼 了</button>
+        <button onclick="hide('confirm')">算 了</button>
+      </div>
+    </div>
+    <div class="overlay" id="manual">
+      <h2 style="font-size:18px;letter-spacing:3px;">怪 物 手 册</h2>
+      <div class="tabs">
+        <button id="tab0" onclick="setTab(0)">本 层</button>
+        <button id="tab1" onclick="setTab(1)">全 塔</button>
+      </div>
+      <div id="manualList" style="width:100%;display:flex;flex-direction:column;align-items:center;"></div>
+      <button onclick="hide('manual')">关 闭</button>
+    </div>
+    <div class="overlay" id="shop">
+      <h2 style="font-size:18px;letter-spacing:3px;">神 秘 商 人</h2>
+      <p>「勇者,拿金币换点力量吧。」</p>
+      <p id="shopGold" style="color:var(--gold);margin-top:8px;"></p>
+      <div class="srow">
+        <button onclick="buy(0)" id="b0"></button>
+        <button onclick="buy(1)" id="b1"></button>
+        <button onclick="buy(2)" id="b2"></button>
+      </div>
+      <button onclick="hide('shop')">离 开</button>
+    </div>
+    <div class="overlay" id="tele">
+      <h2 style="font-size:18px;letter-spacing:3px;">楼 层 传 送</h2>
+      <p style="font-size:12px;color:#8a80a8;">只能传送到已经到过的楼层</p>
+      <div class="tgrid" id="teleGrid"></div>
+      <button onclick="hide('tele')">取 消</button>
+    </div>
+    <div class="overlay" id="slots">
+      <h2 style="font-size:18px;letter-spacing:3px;" id="slotTitle">存 档</h2>
+      <div class="srow" id="slotList"></div>
+      <button onclick="closeSlots()">取 消</button>
+    </div>
+    <div class="overlay" id="gameover">
+      <h2 style="color:#ff5050;">力 竭</h2>
+      <p id="deadText"></p>
+      <div class="srow" style="display:flex;gap:10px;">
+        <button onclick="hide('gameover');openSlots('load')">读 档</button>
+        <button onclick="restart()">重 来</button>
+      </div>
+    </div>
+    <div class="overlay" id="ending">
+      <h2>救 出 公 主</h2>
+      <p id="endText"></p>
+      <button onclick="restart()">再 玩 一 次</button>
+    </div>
+  </div>
+  <div id="hud">
+    <h1>魔塔</h1>
+    <div id="floorLabel">第 1 层</div>
+    <div class="stat hp"><span>生命</span><b id="sHp"></b></div>
+    <div id="hpbar"><div id="hpfill"></div></div>
+    <div class="stat atk"><span>攻击</span><b id="sAtk"></b></div>
+    <div class="stat def"><span>防御</span><b id="sDef"></b></div>
+    <div class="stat gold"><span>金币</span><b id="sGold"></b></div>
+    <div id="keys">
+      <div class="keyItem kY">黄钥匙<br><b id="kY">0</b></div>
+      <div class="keyItem kB">蓝钥匙<br><b id="kB">0</b></div>
+      <div class="keyItem kR">红钥匙<br><b id="kR">0</b></div>
+    </div>
+    <div id="msg">冒险开始了。</div>
+  </div>
+  <div id="controls">
+    <div class="btnRow">
+      <button onclick="showManual()">手册</button>
+      <button onclick="openTele()" id="teleBtn">传送</button>
+      <button onclick="toggleMute()" id="muteBtn">声音 开</button>
+    </div>
+    <div class="btnRow">
+      <button onclick="openSlots('save')">存档</button>
+      <button onclick="openSlots('load')">读档</button>
+      <button onclick="askRestart()">重开</button>
+    </div>
+    <div id="dpad">
+      <div class="drow"><button data-d="0,-1" aria-label="上">▲</button></div>
+      <div class="drow"><button data-d="-1,0" aria-label="左">◀</button><button data-d="0,1" aria-label="下">▼</button><button data-d="1,0" aria-label="右">▶</button></div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ================= 数据 ================= */
+/* id:[名, HP, ATK, DEF, 金币, 特性] */
+const MON = {
+  1 :["绿头怪",   45,  16,  2, 2,  []],
+  2 :["红头怪",   60,  21,  4, 3,  []],
+  3 :["小蝙蝠",   90,  26,  6, 4,  ["double"]],
+  4 :["骷髅兵",  130,  32, 10, 6,  []],
+  5 :["幽灵",     90,  34, 14, 7,  ["magic"]],
+  6 :["兽人",    220,  48, 18, 9,  ["first"]],
+  7 :["石头人",  320,  50, 34, 12, []],
+  8 :["巫师",    180,  62, 24, 11, ["magic"]],
+  9 :["骷髅队长",380,  76, 40, 15, ["first"]],
+  10:["暗黑骑士",500, 110, 48, 20, ["double"]],
+  11:["吸血鬼",  580, 128, 56, 26, ["drain"]],
+  12:["双手剑士",700, 138, 64, 32, ["first","double"]],
+  13:["恶魔卫士",700, 140, 70, 40, ["magic","first"]],
+  14:["魔王",   1600, 170, 82, 0,  ["first"]] };
+const ABIL = { first:["先攻","#ff8a5a","第一回合它先出手,多挨一轮"],
+  double:["连击","#ff5a5a","每回合攻击两次"],
+  magic :["魔攻","#c08aff","只算你一半的防御"],
+  drain :["吸血","#ff5aa0","开战吸走你 15% 当前生命"] };
+const MCH = {'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'A':10,'B':11,'C':12,'E':13,'Z':14};
+const ITEM = {k:["黄钥匙","yk",1],l:["蓝钥匙","bk",1],m:["红钥匙","rk",1],
+  p:["红血瓶","hp",250],P:["蓝血瓶","hp",600],g:["攻击宝石","atk",5],d:["防御宝石","def",5],
+  s:["铁剑","atk",15],t:["铁盾","def",15],n:["银剑","atk",25],o:["银盾","def",25],
+  w:["圣剑","atk",45],v:["圣盾","def",45]};
+const DOOR = {y:["黄门","yk"],b:["蓝门","bk"],r:["红门","rk"]};
+const MAPS = [
+["###########","#p.#..1..g#","#1.#.#.#..#","#..y.#k#.##","##.#..#..k#","#..##y##.##","#.1...2..d#","#.#####.###","#k....#..U#","#@F.1.y.2.#","###########"],
+["###########","#D...k...U#","#.#.###.#.#","#.#2...2#.#","#..#.k.#..#","#g.y...y.d#","#..#.2.#..#","#.#1...1#.#","#.#.###.#.#","#k...p...k#","###########"],
+["###########","#U...3...k#","#.#######.#","#.#k.d.#3.#","#.#.###.#.#","#3#.#p#.#.#","#.#.#.#.#.#","#.#.#y#.#.#","#.#...#..g#","#D..3#..3d#","###########"],
+["###########","#D.4.y.4.s#","#.#.#.#.#.#","#.#.#k#.#.#","#.#.#.#.#.#","#4...b...4#","#.#.#.#.#.#","#.#p#l#d#.#","#.#.#.#.#.#","#k.4.y.4.U#","###########"],
+["###########","#U..5#g..l#","#.##.#.##.#","#..b.#.5..#","#5#..#..#5#","#..#.y.#dg#","#.#..#..#.#","#p#5.#.5#P#","#.#..#..#.#","#k#..#..#D#","###########"],
+["###########","#D.......t#","#.#######.#","#.#6.5.6#.#","#.#.....#.#","#l#.6M6.#k#","#.#..P..#.#","#.#6.5.6#.#","#.###.###.#","#k...b...U#","###########"],
+["###########","#U.7.6.7.k#","#.#######.#","#g...y...7#","#.#######.#","#7.M.P.6.n#","#.#######.#","#l...b...7#","#.#######.#","#k.7.6.7.D#","###########"],
+["###########","#D.8#d#8.g#","#.k8#.#8ol#","##y##.##y##","#l.#...#.k#","#8.#.P.#.8#","#..#...#..#","##b##r##b##","#l.8#.#8.P#","#m...T...U#","###########"],
+["###########","#U.9.#.9.k#","#.#.#d#.#.#","#9.9.b.9.9#","#.#.#.#.#.#","#.#.#P#.#.#","#.#.#.#.#.#","#9.9.y.9.9#","#.#.#k#.#.#","#w.l.#.9.D#","###########"],
+["###########","#D.......m#","#.#######.#","#.#A...A#.#","#.#.#.#.#.#","#l#.#P#.#A#","#.#.#.#.#.#","#.#A.d.A#.#","#.###.###.#","#k...b...U#","###########"],
+["###########","#U..B.B..m#","#.#.###.#.#","#.#..P..#.#","#.#.#M#.#.#","#l..#P#..C#","#.#.#.#.#.#","#.#..d..#.#","#.#.###.#.#","#k.B.C.B.D#","###########"],
+["###########","#g.#.X.#.g#","#..##Z##..#","#.#..E..#.#","#.C.###.C.#","#P..#P#..P#","##.##.##.##","#P.E...E.P#","#.###E###.#","#g...D...d#","###########"]];
+
+/* ================= 像素画 ================= */
+const T=40, N=11, BASE=T*N;
+function mkSprite(rows, pal){
+  const c=document.createElement('canvas'); c.width=8; c.height=8;
+  const x=c.getContext('2d');
+  rows.forEach((row,r)=>{ for(let i=0;i<8;i++){ const ch=row[i];
+    if(ch!=='.'&&pal[ch]){ x.fillStyle=pal[ch]; x.fillRect(i,r,1,1);} }});
+  return c;
+}
+const humanoid=["..hhhh..","..hffh..",".bbbbbb.","b.bbbb.b","..bbbb..","..b..b..","..l..l..",".ll..ll."];
+const slime=["........","..cccc..",".cccccc.",".cwccwc.","cccccccc","cccccccc",".cccccc.","..c..c.."];
+const skel=["..wwww..","..wkkw..","..wwww..",".wwwwww.","w.wwww.w","..w..w..","..w..w..",".ww..ww."];
+const batS=["........","c......c","cc....cc","cccccccc",".cwccwc.","..cccc..",".c.cc.c.","........"];
+const ghost=["..pppp..",".pppppp.",".pwppwp.",".pppppp.",".pppppp.",".pppppp.",".p.pp.p.","........"];
+const golem=[".gggggg.",".g.gg.g.",".gggggg.","gggggggg","g.gggg.g","g.gggg.g","..g..g..",".gg..gg."];
+const wiz=["...m....","..mmm...",".mmmmm..","..fwf...",".mmmmm..","m.mmm.m.",".mmmmm..",".m...m.."];
+const demon=["h.hhhh.h",".hhffhh.",".rrrrrr.","r.rrrr.r","..rrrr..","..r..r..","..d..d..",".dd..dd."];
+const keySpr=["...ooo..","...o.o..","...ooo..","....o...","....o...","...oo...","....o...","...oo..."];
+const potSpr=["...ww...","...ww...","..cccc..",".cccccc.",".cccccc.",".cccccc.","..cccc..","........"];
+const gemSpr=["........","...cc...","..cccc..",".cccccc.",".cccccc.","..cccc..","...cc...","........"];
+const swordSpr=["......w.",".....ww.","....ww..","...ww...","o.ww....",".ooo....",".ooo....","o..o...."];
+const shieldSpr=["........",".cccccc.",".cwwwwc.",".cwccwc.",".cwwwwc.","..cccc..","...cc...","........"];
+const doorSpr=["cccccccc","c......c","c.cccc.c","c.cccc.c","c.cokc.c","c.cccc.c","c.cccc.c","cccccccc"];
+const S={};
+function buildSprites(){
+  S.floor=mkSprite(["aaaaaaaa","abaaaaba","aaaaaaaa","aaabaaaa","aaaaaaaa","abaaaaba","aaaaaaaa","aaaabaaa"],{a:"#241f33",b:"#2c2640"});
+  S.wall=mkSprite(["bbbbbbbb","baabaaab","bbbbbbbb","abaabaab","bbbbbbbb","baabaaba","bbbbbbbb","aabaabaa"],{a:"#3d3455",b:"#554a75"});
+  S.y=mkSprite(doorSpr,{c:"#8a6d1f",o:"#f0c040",k:"#f0c040"});
+  S.b=mkSprite(doorSpr,{c:"#1f4d8a",o:"#5aa0ff",k:"#5aa0ff"});
+  S.r=mkSprite(doorSpr,{c:"#8a1f1f",o:"#ff5a5a",k:"#ff5a5a"});
+  S.k=mkSprite(keySpr,{o:"#f0c040"}); S.l=mkSprite(keySpr,{o:"#5aa0ff"}); S.m=mkSprite(keySpr,{o:"#ff5a5a"});
+  S.p=mkSprite(potSpr,{w:"#c8c8d8",c:"#e04848"}); S.P=mkSprite(potSpr,{w:"#c8c8d8",c:"#4878e0"});
+  S.g=mkSprite(gemSpr,{c:"#ff6a50"}); S.d=mkSprite(gemSpr,{c:"#50a0ff"});
+  S.s=mkSprite(swordSpr,{w:"#c8d0e0",o:"#8a6d1f"}); S.w=mkSprite(swordSpr,{w:"#ffe080",o:"#f0c040"});
+  S.t=mkSprite(shieldSpr,{c:"#8a7a50",w:"#c8b880"}); S.v=mkSprite(shieldSpr,{c:"#c09020",w:"#ffe080"});
+  S.n=mkSprite(swordSpr,{w:"#e8f0ff",o:"#7a8aa0"}); S.o=mkSprite(shieldSpr,{c:"#7a8aa0",w:"#e8f0ff"});
+  S.U=mkSprite(["......ee","....eeee","..eeeeee","eeeeeeee","...aa...","...aa...","...aa...","...aa..."],{e:"#9a8ac0",a:"#6a5a90"});
+  S.D=mkSprite(["ee......","eeee....","eeeeee..","eeeeeeee","...aa...","...aa...","...aa...","...aa..."],{e:"#9a8ac0",a:"#6a5a90"});
+  S.T=mkSprite(["..cccc..",".c....c.","c..cc..c","c.cwwc.c","c.cwwc.c","c..cc..c",".c....c.","..cccc.."],{c:"#60e0d0",w:"#ffffff"});
+  S.hero=mkSprite(humanoid,{h:"#f0c040",f:"#ffd8a8",b:"#4878e0",l:"#c8a060"});
+  S.F=mkSprite(["w..ww..w",".wwwwww.","w.pffp.w","..pffp..",".pppppp.","..pppp..","...pp...","..p..p.."],{w:"#a8e8ff",p:"#ff9ad0",f:"#ffe0c0"});
+  S.M=mkSprite(humanoid,{h:"#8a5a30",f:"#e0b890",b:"#7a5a3a",l:"#50402a"});
+  S.X=mkSprite(["..o.o...","..ooo...","..hffh..",".pppppp.","p.pppp.p","..pppp..",".pppppp.",".p.pp.p."],{o:"#f0c040",h:"#e8a030",f:"#ffe0c0",p:"#ff8ac0"});
+  S.M1=mkSprite(slime,{c:"#48c048",w:"#103010"});
+  S.M2=mkSprite(slime,{c:"#e05048",w:"#301008"});
+  S.M3=mkSprite(batS,{c:"#9a60d0",w:"#ffe040"});
+  S.M4=mkSprite(skel,{w:"#d8d8c8",k:"#181810"});
+  S.M5=mkSprite(ghost,{p:"#80c0d8",w:"#082030"});
+  S.M6=mkSprite(humanoid,{h:"#308030",f:"#60b050",b:"#6a4a2a",l:"#405030"});
+  S.M7=mkSprite(golem,{g:"#8a8a9a"});
+  S.M8=mkSprite(wiz,{m:"#8040c0",f:"#e0c0ff",w:"#ffe040"});
+  S.M9=mkSprite(skel,{w:"#e0c060",k:"#301808"});
+  S.M10=mkSprite(humanoid,{h:"#404050",f:"#8888a0",b:"#303040",l:"#202030"});
+  S.M11=mkSprite(["..kkkk..",".kkkkkk.","..ffff..","..frrf..",".kkkkkk.","k.kkkk.k","..k..k..",".kk..kk."],{k:"#282838",f:"#e8e0e8",r:"#e02020"});
+  S.M12=mkSprite(["w.hhhh..","wwhffh..","wbbbbbb.","wbbbbb.b","w.bbbb..","w.b..b..","..l..l..",".ll..ll."],{h:"#c05020",f:"#ffd8a8",b:"#a03030",l:"#703030",w:"#c8d0e0"});
+  S.M13=mkSprite(demon,{h:"#ffe040",f:"#ffb060",r:"#c03028",d:"#802018"});
+  S.M14=mkSprite(["h.hhhh.h","hhhffhhh",".rrwwrr.","rrrrrrrr","r.rrrr.r","..rrrr..",".dd..dd.","ddd..ddd"],{h:"#ffe040",f:"#ff4040",w:"#ffffff",r:"#601878",d:"#381048"});
+}
+/* ================= 状态 ================= */
+let floors, pos, st, hasManual, hasTele, visited, shopCnt;
+let dead=false, won=false, steps=0, t0=0;
+let facing=1, bob=0;
+let anims=[];              // 漂浮文字
+let dirty=true;            // 脏标记:只有变化时才重绘
+let maxHp=1000;
+function markDirty(){ dirty=true; }
+function newGame(){
+  floors = MAPS.map(f=>f.map(r=>r.split('')));
+  pos=null;
+  for(let f=0;f<floors.length;f++) for(let r=0;r<N;r++) for(let c=0;c<N;c++)
+    if(floors[f][r][c]==='@'){ pos={f,r,c}; floors[f][r][c]='.'; }
+  if(!pos) pos={f:0,r:1,c:1};
+  st={hp:1000,atk:10,def:10,gold:0,yk:1,bk:0,rk:0};
+  maxHp=1000; hasManual=false; hasTele=false;
+  visited=floors.map(()=>false); visited[pos.f]=true;
+  shopCnt=[0,0,0]; dead=false; won=false; anims=[];
+  steps=0; t0=Date.now(); facing=1; bob=0;
+  OVERLAYS.forEach(id=>{ if(id!=='intro') hide(id); });   // 开新局时清掉残留弹窗
+  msg("冒险开始了。旁边的仙子有话要说。");
+  buildBg(); updatePanel(); markDirty();
+}
+function findTile(f,ch){
+  if(f<0||f>=floors.length) return null;
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(floors[f][r][c]===ch) return {r,c};
+  return null;
+}
+/* ================= 战斗 ================= */
+/* 返回击杀该怪需要付出的生命,null = 完全打不动 */
+function calcDmg(mid, hp){
+  const m=MON[mid], ab=m[5];
+  if(hp===undefined) hp=st.hp;
+  const pd=st.atk-m[3];
+  if(pd<=0) return null;
+  const rounds=Math.ceil(m[1]/pd);
+  const edef=(ab.indexOf('magic')>=0)? Math.floor(st.def/2) : st.def;
+  let md=Math.max(0,m[2]-edef);
+  if(ab.indexOf('double')>=0) md*=2;
+  const hits=(ab.indexOf('first')>=0)? rounds : rounds-1;
+  let dmg=hits*md;
+  if(ab.indexOf('drain')>=0) dmg+=Math.floor(hp*0.15);
+  return dmg;
+}
+function needAtk(mid){ return MON[mid][3]+1; }
+/* ================= 渲染 ================= */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const DPR=Math.min(3,Math.max(1,Math.round(window.devicePixelRatio||1)));
+cv.width=BASE*DPR; cv.height=BASE*DPR;
+ctx.setTransform(DPR,0,0,DPR,0,0);
+ctx.imageSmoothingEnabled=false;
+const bg=document.createElement('canvas');           // 静态层:墙与地板
+bg.width=BASE*DPR; bg.height=BASE*DPR;
+const bx=bg.getContext('2d');
+bx.setTransform(DPR,0,0,DPR,0,0); bx.imageSmoothingEnabled=false;
+function buildBg(){
+  const g=floors[pos.f];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++)
+    bx.drawImage(g[r][c]==='#'?S.wall:S.floor,c*T,r*T,T,T);
+}
+function sprFor(ch){
+  if(ch==='#') return S.wall;
+  if(MCH[ch]) return S['M'+MCH[ch]];
+  return S[ch]||null;
+}
+function render(){
+  dirty=false;
+  const g=floors[pos.f];
+  ctx.drawImage(bg,0,0,BASE*DPR,BASE*DPR,0,0,BASE,BASE);
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const ch=g[r][c];
+    if(ch==='#'||ch==='.') continue;
+    const sp=sprFor(ch); if(sp) ctx.drawImage(sp,c*T,r*T,T,T);
+    if(hasManual&&MCH[ch]){
+      const dm=calcDmg(MCH[ch]);
+      const txt=(dm===null)?"×":(dm>=st.hp?"死":dm);
+      ctx.fillStyle="rgba(0,0,0,.65)"; ctx.fillRect(c*T,r*T+T-11,T,11);
+      ctx.fillStyle=(dm===null||dm>=st.hp)?"#ff5050":(dm===0?"#7ae87a":(dm>st.hp/2?"#ff9040":"#fff"));
+      ctx.font="10px monospace"; ctx.textAlign="center";
+      ctx.fillText(txt,c*T+T/2,r*T+T-2);
+    }
+  }
+  // 勇者(按朝向翻转 + 走动微跳)
+  ctx.save();
+  ctx.translate(pos.c*T+T/2, pos.r*T+T/2+bob);
+  ctx.scale(facing,1);
+  ctx.drawImage(S.hero,-T/2,-T/2,T,T);
+  ctx.restore();
+  // 漂浮文字
+  const now=performance.now();
+  anims=anims.filter(a=>now-a.t<850);
+  if(anims.length) dirty=true;
+  anims.forEach(a=>{
+    const k=(now-a.t)/850;
+    ctx.globalAlpha=Math.min(1,2-2*k); ctx.fillStyle=a.color;
+    ctx.font="bold 15px monospace"; ctx.textAlign="center";
+    ctx.lineWidth=3; ctx.strokeStyle="rgba(0,0,0,.8)";
+    ctx.strokeText(a.txt,a.x*T+T/2,a.y*T+10-k*24);
+    ctx.fillText(a.txt,a.x*T+T/2,a.y*T+10-k*24);
+    ctx.globalAlpha=1;
+  });
+  if(bob!==0){ bob=0; dirty=true; }
+}
+function loop(){ if(dirty) render(); requestAnimationFrame(loop); }
+function float(r,c,txt,color,dx){ anims.push({x:c+(dx||0),y:r,txt,color,t:performance.now()}); markDirty(); }
+/* ================= 面板 ================= */
+function updatePanel(){
+  if(st.hp>maxHp) maxHp=st.hp;
+  sHp.textContent=st.hp; sAtk.textContent=st.atk; sDef.textContent=st.def; sGold.textContent=st.gold;
+  kY.textContent=st.yk; kB.textContent=st.bk; kR.textContent=st.rk;
+  hpfill.style.width=Math.max(0,Math.min(100,st.hp/maxHp*100))+"%";
+  floorLabel.textContent="第 "+(pos.f+1)+" 层";
+  teleBtn.disabled=!hasTele;
+}
+function msg(t){ document.getElementById('msg').textContent=t; }
+/* ================= 声音 ================= */
+let AC=null, muted=false;
+function toggleMute(){ muted=!muted; muteBtn.textContent="声音 "+(muted?"关":"开"); if(!muted) beep(660,.06,'sine'); }
+function ensureAudio(){
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+  }catch(e){}
+}
+function beep(freq,dur,type,vol){
+  if(muted) return;
+  try{
+    ensureAudio(); if(!AC) return;
+    const o=AC.createOscillator(),gn=AC.createGain();
+    o.type=type||'square'; o.frequency.value=freq; gn.gain.value=vol||.08;
+    o.connect(gn); gn.connect(AC.destination);
+    o.start(); gn.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);
+    o.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+/* ================= 覆盖层 ================= */
+const OVERLAYS=['intro','dialog','confirm','manual','shop','tele','slots','gameover','ending'];
+function show(id){ document.getElementById(id).classList.add('show'); }
+function hide(id){ document.getElementById(id).classList.remove('show'); }
+function overlayOpen(){ return OVERLAYS.some(id=>document.getElementById(id).classList.contains('show')); }
+function closeIntro(){ hide('intro'); beep(660,.1,'sine'); }
+function showDialog(t){ document.getElementById('dialogText').textContent=t; show('dialog'); }
+function closeDialog(){ hide('dialog'); }
+/* ================= 移动/交互 ================= */
+let pending=null;
+function askConfirm(text,fn){ document.getElementById('confirmText').innerHTML=text; pending=fn; show('confirm'); }
+function doConfirm(){ hide('confirm'); const f=pending; pending=null; if(f) f(); }
+function die(reason){
+  dead=true; st.hp=0; updatePanel();
+  document.getElementById('deadText').innerHTML=
+    reason+"<br><br>勇者倒在第 "+(pos.f+1)+" 层。<br>公主还在塔顶等着。";
+  show('gameover'); beep(200,.25,'sawtooth'); setTimeout(()=>beep(140,.45,'sawtooth'),200);
+}
+function fight(mid,nr,nc){
+  const m=MON[mid], dm=calcDmg(mid);
+  st.hp-=dm; st.gold+=m[4];
+  floors[pos.f][nr][nc]='.';
+  float(nr,nc,"-"+dm,"#ff5050",-0.35);
+  if(m[4]>0) float(nr,nc,"+"+m[4],"#f0c040",0.35);
+  beep(220,.12,'sawtooth');
+  updatePanel(); markDirty();
+  if(st.hp<=0){ die("你砍倒了"+m[0]+",自己也没能站住。"); return; }
+  if(mid===14) msg("魔王倒下了!公主就在正上方。");
+  else msg("击败 "+m[0]+"!损失 "+dm+" 生命,获得 "+m[4]+" 金币。");
+}
+function move(dc,dr){
+  if(dead||won||overlayOpen()) return;
+  if(dc!==0) facing=dc>0?1:-1;
+  const nr=pos.r+dr, nc=pos.c+dc;
+  if(nr<0||nr>=N||nc<0||nc>=N) return;
+  const g=floors[pos.f], ch=g[nr][nc];
+  markDirty();
+  if(ch==='#') return;
+  if(DOOR[ch]){
+    const name=DOOR[ch][0], key=DOOR[ch][1];
+    if(st[key]>0){ st[key]--; g[nr][nc]='.'; beep(520,.08); msg("用掉一把钥匙,打开了"+name+"。"); }
+    else msg("需要"+({yk:"黄",bk:"蓝",rk:"红"}[key])+"钥匙!");
+    updatePanel(); return;
+  }
+  if(ITEM[ch]){
+    const name=ITEM[ch][0], stat=ITEM[ch][1], val=ITEM[ch][2];
+    st[stat]+=val;
+    g[nr][nc]='.';
+    const col=stat==='hp'?"#ff8080":stat==='atk'?"#ffb054":stat==='def'?"#6ab8ff":"#f0c040";
+    float(nr,nc,"+"+val,col); beep(880,.07,'sine');
+    msg("获得 "+name+(stat==='hp'?" 生命+"+val:stat==='atk'?" 攻击+"+val:stat==='def'?" 防御+"+val:""));
+    pos={f:pos.f,r:nr,c:nc}; steps++; bob=-2; updatePanel(); return;
+  }
+  if(MCH[ch]){
+    const mid=MCH[ch], m=MON[mid], dm=calcDmg(mid);
+    if(dm===null){ msg("打不动 "+m[0]+"!攻击力至少要到 "+needAtk(mid)+"。"); beep(140,.15); return; }
+    if(dm>=st.hp){
+      askConfirm("<b style='color:#ff8080'>"+m[0]+"</b> 会造成 <b>"+dm+"</b> 点伤害,<br>你只剩 <b>"+st.hp+"</b> 点生命。<br><br>打下去必死。",
+        ()=>fight(mid,nr,nc));
+      beep(140,.15); return;
+    }
+    fight(mid,nr,nc); return;
+  }
+  if(ch==='U'||ch==='D'){
+    const nf=pos.f+(ch==='U'?1:-1);
+    const p=findTile(nf,ch==='U'?'D':'U');
+    if(!p){ msg("这道楼梯通向虚空……"); return; }
+    gotoFloor(nf,p.r,p.c);
+    beep(660,.08); msg((ch==='U'?"上":"下")+"到第 "+(nf+1)+" 层。");
+    return;
+  }
+  if(ch==='F'){
+    showDialog("仙子:「勇者,魔王把公主关在塔顶。这本《怪物手册》给你——按 M 随时翻看。\n\n小心那些带特性的家伙:先攻、连击、魔攻、坚固、吸血,算错一步就回不来了。」");
+    g[nr][nc]='.'; hasManual=true; beep(990,.15,'sine'); markDirty();
+    return;
+  }
+  if(ch==='M'){ openShop(); return; }
+  if(ch==='T'){
+    g[nr][nc]='.'; hasTele=true; beep(1200,.12,'sine');
+    showDialog("你捡起了一枚会发光的传送罗盘。\n\n从此可以按 T 直接回到去过的任意楼层。");
+    updatePanel(); markDirty(); return;
+  }
+  if(ch==='X'){ winGame(); return; }
+  pos={f:pos.f,r:nr,c:nc}; steps++; bob=-2;
+}
+function gotoFloor(nf,r,c){
+  pos={f:nf,r:r,c:c}; visited[nf]=true;
+  buildBg(); updatePanel(); markDirty();
+}
+function winGame(){
+  won=true;
+  const sec=Math.floor((Date.now()-t0)/1000);
+  const mm=String(Math.floor(sec/60)).padStart(2,'0'), ss=String(sec%60).padStart(2,'0');
+  document.getElementById('endText').innerHTML=
+    "公主:「我就知道你会来。」<br><br>你牵起公主的手,走下十二层魔塔。<br>阳光照在塔外的原野上。<br><br>—— 全 剧 终 ——<br><br>"
+    +"<span style='font-size:12px;color:#8a80a8'>生命 "+st.hp+" · 攻击 "+st.atk+" · 防御 "+st.def
+    +" · 金币 "+st.gold+"<br>步数 "+steps+" · 用时 "+mm+":"+ss+"</span>";
+  show('ending'); beep(523,.15,'triangle'); setTimeout(()=>beep(659,.15,'triangle'),150);
+  setTimeout(()=>beep(784,.3,'triangle'),300);
+}
+/* ================= 商店 ================= */
+const SHOP=[["生命 +500",20,()=>st.hp+=500],["攻击 +4",30,()=>st.atk+=4],["防御 +4",30,()=>st.def+=4]];
+function price(i){ return Math.floor(SHOP[i][1]*Math.pow(1.5,shopCnt[i])); }
+function openShop(){
+  for(let i=0;i<3;i++){
+    const b=document.getElementById('b'+i);
+    b.textContent=SHOP[i][0]+" ("+price(i)+"金)";
+    b.disabled=st.gold<price(i);
+  }
+  shopGold.textContent="你的金币:"+st.gold;
+  show('shop');
+}
+function buy(i){
+  const p=price(i);
+  if(st.gold<p){ beep(140,.1); return; }
+  st.gold-=p; SHOP[i][2](); shopCnt[i]++;
+  beep(880,.08,'sine'); updatePanel(); markDirty(); openShop();
+}
+/* ================= 手册 ================= */
+let manTab=0;
+function setTab(i){ manTab=i; renderManual(); }
+function showManual(){
+  if(!hasManual){ msg("还没有怪物手册,先去找一层的仙子。"); return; }
+  renderManual(); show('manual');
+}
+function abTags(ab){
+  return ab.map(a=>'<i style="color:'+ABIL[a][1]+'" title="'+ABIL[a][2]+'">'+ABIL[a][0]+'</i>').join('');
+}
+function renderManual(){
+  tab0.className=manTab===0?'on':''; tab1.className=manTab===1?'on':'';
+  const list=document.getElementById('manualList'); list.innerHTML='';
+  let ids;
+  if(manTab===0){
+    const seen=new Set(), g=floors[pos.f];
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){ const id=MCH[g[r][c]]; if(id) seen.add(id); }
+    ids=[...seen].sort((a,b)=>a-b);
+    if(!ids.length){ list.innerHTML='<p style="padding:20px;">本层已无怪物。</p>'; return; }
+  } else {
+    ids=Object.keys(MON).map(Number).sort((a,b)=>a-b);
+  }
+  ids.forEach(id=>{
+    const m=MON[id], dm=calcDmg(id);
+    const row=document.createElement('div'); row.className='mrow';
+    const ic=document.createElement('canvas'); ic.width=28; ic.height=28;
+    const ix=ic.getContext('2d'); ix.imageSmoothingEnabled=false;
+    ix.drawImage(S['M'+id],0,0,28,28);
+    let dmgTxt,cls;
+    if(dm===null){ dmgTxt="打不动"; cls="dmg-dead"; }
+    else if(dm>=st.hp){ dmgTxt=dm+" 必死"; cls="dmg-dead"; }
+    else if(dm===0){ dmgTxt="0"; cls="dmg-safe"; }
+    else if(dm>st.hp/2){ dmgTxt=""+dm; cls="dmg-high"; }
+    else { dmgTxt=""+dm; cls=dm>st.hp/5?"dmg-mid":"dmg-safe"; }
+    row.appendChild(ic);
+    row.insertAdjacentHTML('beforeend',
+      '<span class="mname">'+m[0]+'</span>'+
+      '<span>命'+m[1]+' 攻'+m[2]+' 防'+m[3]+' 金'+m[4]+'</span>'+
+      '<span class="mab">'+abTags(m[5])+'</span>'+
+      '<span class="mdmg '+cls+'">'+dmgTxt+'</span>');
+    list.appendChild(row);
+  });
+}
+/* ================= 传送 ================= */
+function openTele(){
+  if(!hasTele){ msg("还没有传送罗盘。"); return; }
+  if(dead||won) return;
+  const grid=document.getElementById('teleGrid'); grid.innerHTML='';
+  for(let f=0;f<floors.length;f++){
+    const b=document.createElement('button');
+    b.textContent=(f+1);
+    b.disabled=!visited[f];
+    if(f===pos.f){ b.style.borderColor='var(--gold)'; b.style.color='var(--gold)'; }
+    b.onclick=()=>{
+      const p=findTile(f,'D')||findTile(f,'U');
+      if(!p){ msg("那一层没有落脚点。"); return; }
+      hide('tele'); gotoFloor(f,p.r,p.c);
+      beep(1000,.1,'sine'); msg("传送到第 "+(f+1)+" 层。");
+    };
+    grid.appendChild(b);
+  }
+  show('tele');
+}
+/* ================= 存档(三个槽) ================= */
+const SLOTKEY=i=>'mota_save_'+i;
+let slotMode='save';
+function slotInfo(i){
+  try{
+    const d=JSON.parse(localStorage.getItem(SLOTKEY(i)));
+    if(!d) return null;
+    return "第 "+(d.pos.f+1)+" 层 · 命"+d.st.hp+" 攻"+d.st.atk+" 防"+d.st.def+"\n"+d.when;
+  }catch(e){ return null; }
+}
+function openSlots(mode){
+  slotMode=mode;
+  document.getElementById('slotTitle').textContent=mode==='save'?"存 档":"读 档";
+  const list=document.getElementById('slotList'); list.innerHTML='';
+  for(let i=1;i<=3;i++){
+    const info=slotInfo(i);
+    const b=document.createElement('button');
+    b.textContent="槽 "+i+"　"+(info||"（空）");
+    b.style.whiteSpace='pre-line';
+    b.disabled=(mode==='load'&&!info);
+    b.onclick=()=>{ hide('slots'); if(mode==='save'){ saveGame(i); if(dead) show('gameover'); } else loadGame(i); };
+    list.appendChild(b);
+  }
+  show('slots');
+}
+/* 从「力竭」界面点开存档后取消,要能退回死亡界面,否则会卡住 */
+function closeSlots(){ hide('slots'); if(dead) show('gameover'); }
+function saveGame(i){
+  try{
+    const now=new Date();
+    localStorage.setItem(SLOTKEY(i),JSON.stringify({
+      floors:floors.map(f=>f.map(r=>r.join(''))),pos,st,maxHp,hasManual,hasTele,visited,shopCnt,steps,
+      elapsed:Date.now()-t0,
+      when:now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0')
+           +" "+String(now.getHours()).padStart(2,'0')+":"+String(now.getMinutes()).padStart(2,'0')}));
+    msg("已存到槽 "+i+"。"); beep(700,.08,'sine');
+  }catch(e){ msg("存档失败(浏览器不允许本地存储)。"); }
+}
+function loadGame(i){
+  try{
+    const d=JSON.parse(localStorage.getItem(SLOTKEY(i)));
+    if(!d){ msg("槽 "+i+" 是空的。"); return; }
+    floors=d.floors.map(f=>f.map(r=>r.split('')));
+    pos=d.pos; st=d.st; maxHp=d.maxHp||st.hp;
+    hasManual=d.hasManual; hasTele=!!d.hasTele;
+    visited=d.visited||floors.map(()=>true);
+    shopCnt=d.shopCnt; steps=d.steps||0; t0=Date.now()-(d.elapsed||0);
+    dead=false; won=false;
+    ['ending','gameover','confirm','tele','shop','manual'].forEach(hide);
+    buildBg(); updatePanel(); markDirty();
+    msg("已读取槽 "+i+"。"); beep(700,.08,'sine');
+  }catch(e){ msg("读档失败。"); }
+}
+function askRestart(){
+  if(dead||won){ restart(); return; }
+  askConfirm("确定要放弃当前进度,<br>从第一层重新开始吗?",restart);
+}
+function restart(){ ['ending','gameover'].forEach(hide); newGame(); }
+/* ================= 输入 ================= */
+const KEYMAP={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],
+              arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]};
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='s'){ e.preventDefault(); openSlots('save'); return; }
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(KEYMAP[k]){ e.preventDefault(); move(KEYMAP[k][0],KEYMAP[k][1]); return; }
+  if(k==='escape'){ e.preventDefault(); ['manual','shop','tele','confirm'].forEach(hide); closeSlots(); return; }
+  if(overlayOpen()) return;
+  if(k==='m') showManual();
+  else if(k==='t') openTele();
+  else if(k==='l') openSlots('load');
+});
+/* ---- 方向键:按下即走,长按连续走 ---- */
+let padHold=null, padRep=null;
+function padStop(){ if(padHold) clearTimeout(padHold); if(padRep) clearInterval(padRep); padHold=padRep=null; }
+document.querySelectorAll('#dpad button').forEach(b=>{
+  const go=()=>{ const p=b.dataset.d.split(',').map(Number); move(p[0],p[1]); };
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    if(b.setPointerCapture) { try{ b.setPointerCapture(e.pointerId); }catch(err){} }
+    padStop(); go();
+    padHold=setTimeout(()=>{ padRep=setInterval(go,130); },300);
+  });
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,padStop));
+});
+window.addEventListener('blur',padStop);
+
+/* ================= 移动端 / 平板适配 ================= */
+const TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints||0)>0 ||
+  (window.matchMedia && window.matchMedia('(hover:none) and (pointer:coarse)').matches);
+if(TOUCH) document.body.classList.add('touch');
+
+/* 只用 11 的倍数,且每格边长是 8 的倍数 —— 保证像素放大是整数倍,不会出现毛边 */
+const WSTEP=[176,264,352,440,528,616,704];
+function pickWidth(avail){ let w=WSTEP[0]; for(let i=0;i<WSTEP.length;i++) if(WSTEP[i]<=avail) w=WSTEP[i]; return w; }
+function vpSize(){
+  const v=window.visualViewport;
+  return { w:Math.round(v?v.width:window.innerWidth), h:Math.round(v?v.height:window.innerHeight) };
+}
+function setCW(w){ document.documentElement.style.setProperty('--cw',w+'px'); }
+function curCW(){
+  const v=window.getComputedStyle(document.documentElement).getPropertyValue('--cw');
+  const n=parseInt(v,10); return isNaN(n)?440:n;
+}
+function fitLayout(){
+  const vp=vpSize(), vw=vp.w, vh=vp.h, cls=document.body.classList;
+  const land  = vw>vh && vh<560;            // 横屏手机
+  const stack = !land && vw<780;            // 竖屏手机 / 竖屏小平板
+  cls.toggle('land',land); cls.toggle('stack',stack);
+  cls.toggle('showpad', TOUCH||stack||land);
+  const pad = land?16:24;                   // 左右内边距合计
+  let availW, availH;
+  if(stack){ availW=vw-pad;               availH=vh-330; }   // 上方状态条 + 下方操作区的预算
+  else if(land){ availW=vw-180-8-pad;     availH=vh-pad;  }
+  else { availW=vw-220-12-pad;            availH=vh-pad;  }
+  setCW(pickWidth(Math.max(0,Math.min(availW,availH)-8)));    // 减掉 canvas 的 4px 边框
+  if(stack) requestAnimationFrame(()=>shrinkIfOverflow(0));
+}
+/* 各家手机的状态栏/地址栏高度差别很大,估不准就量一次再收一档 */
+function shrinkIfOverflow(n){
+  if(n>3) return;
+  if(document.documentElement.scrollHeight<=vpSize().h+2) return;
+  const i=WSTEP.indexOf(curCW());
+  if(i<=0) return;
+  setCW(WSTEP[i-1]);
+  requestAnimationFrame(()=>shrinkIfOverflow(n+1));
+}
+let fitQueued=false;
+function scheduleFit(){
+  if(fitQueued) return; fitQueued=true;
+  requestAnimationFrame(()=>{ fitQueued=false; fitLayout(); });
+}
+window.addEventListener('resize',scheduleFit);
+window.addEventListener('orientationchange',()=>setTimeout(fitLayout,150));
+if(window.visualViewport) window.visualViewport.addEventListener('resize',scheduleFit);
+
+/* ---- 地图上滑动走路:拖过一格走一格 ---- */
+let tOrigin=null, tAnchor=null, tSteps=0;
+function tileSize(){ return (cv.getBoundingClientRect().width-8)/N; }
+cv.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1){ tOrigin=tAnchor=null; return; }
+  const t=e.touches[0];
+  tOrigin={x:t.clientX,y:t.clientY}; tAnchor={x:t.clientX,y:t.clientY}; tSteps=0;
+},{passive:true});
+cv.addEventListener('touchmove',e=>{
+  if(!tAnchor||e.touches.length!==1) return;
+  e.preventDefault();
+  const t=e.touches[0], thr=Math.max(22,tileSize()*0.8);
+  const dx=t.clientX-tAnchor.x, dy=t.clientY-tAnchor.y;
+  if(Math.abs(dx)<thr&&Math.abs(dy)<thr) return;
+  tSteps++;
+  if(Math.abs(dx)>=Math.abs(dy)) move(dx>0?1:-1,0); else move(0,dy>0?1:-1);
+  tAnchor={x:t.clientX,y:t.clientY};
+},{passive:false});
+cv.addEventListener('touchend',e=>{
+  if(!tOrigin) return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tOrigin.x, dy=t.clientY-tOrigin.y;
+  if(tSteps===0){
+    if(Math.abs(dx)<14&&Math.abs(dy)<14) tapStep(t.clientX,t.clientY);       // 轻点
+    else if(Math.abs(dx)>=Math.abs(dy)) move(dx>0?1:-1,0);                    // 短促轻扫
+    else move(0,dy>0?1:-1);
+  }
+  tOrigin=tAnchor=null;
+},{passive:true});
+cv.addEventListener('touchcancel',()=>{ tOrigin=tAnchor=null; },{passive:true});
+/* 点某一格 → 朝那个方向走一步(只走一步,踩不到没算过的怪) */
+function tapStep(cx,cy){
+  const rc=cv.getBoundingClientRect(), cell=tileSize();
+  const c=Math.floor((cx-rc.left-4)/cell), r=Math.floor((cy-rc.top-4)/cell);
+  if(r<0||r>=N||c<0||c>=N) return;
+  const dr=r-pos.r, dc=c-pos.c;
+  if(!dr&&!dc) return;
+  if(Math.abs(dc)>=Math.abs(dr)) move(dc>0?1:-1,0); else move(0,dr>0?1:-1);
+}
+/* iOS 要有一次用户手势才允许出声 */
+function unlockAudio(){
+  ensureAudio();
+  window.removeEventListener('pointerdown',unlockAudio);
+  window.removeEventListener('touchend',unlockAudio);
+}
+window.addEventListener('pointerdown',unlockAudio,{passive:true});
+window.addEventListener('touchend',unlockAudio,{passive:true});
+
+/* ================= 启动 ================= */
+buildSprites(); newGame(); fitLayout(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

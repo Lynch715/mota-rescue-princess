@@ -91,9 +91,9 @@
 
   /* ---------- 竖屏手机 / 小平板:状态在上,地图居中,操作在下 ---------- */
   body.stack #wrap{grid-template-columns:minmax(0,1fr);
-    grid-template-areas:"hud" "game" "ctrl";justify-items:center;gap:10px;}
+    grid-template-areas:"hud" "game" "ctrl";justify-items:center;gap:8px;--pad:8px;}
   body.stack #hud,body.stack #controls{width:calc(var(--cw) + 8px);max-width:100%;}
-  body.stack #hud{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 6px;padding:8px 10px;}
+  body.stack #hud{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 6px;padding:6px 9px;}
   body.stack #hud h1{display:none;}
   body.stack #floorLabel{grid-area:1/1/2/5;margin:0;font-size:14px;}
   body.stack .stat{grid-row:2;flex-direction:column;align-items:center;justify-content:center;
@@ -102,13 +102,24 @@
   body.stack .stat.hp{grid-column:1;} body.stack .stat.atk{grid-column:2;}
   body.stack .stat.def{grid-column:3;} body.stack .stat.gold{grid-column:4;}
   body.stack #hpbar{grid-area:3/1/4/5;margin:2px 0;}
-  body.stack #keys{grid-area:4/1/5/5;margin:2px 0 0;}
+  body.stack #keys{grid-area:4/1/5/5;margin:1px 0 0;}
+  body.stack .keyItem br{display:none;}
+  body.stack .keyItem b{margin-left:5px;}
   body.stack .keyItem{font-size:11px;}
-  body.stack #msg{grid-area:5/1/6/5;margin:4px 0 0;min-height:30px;font-size:11px;padding-top:4px;}
-  body.stack #controls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;}
+  body.stack #msg{grid-area:5/1/6/5;margin:3px 0 0;min-height:26px;font-size:11px;padding-top:4px;}
+  body.stack #controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:6px;}
+  body.stack button{min-height:40px;}
   body.stack #controls .btnRow{display:contents;}
-  body.stack #dpad{grid-column:1/-1;margin-top:2px;}
-  body.stack #dpad button{width:min(84px,26vw);height:56px;font-size:22px;}
+  body.stack #dpad{grid-column:1/-1;margin-top:1px;}
+  body.stack #dpad button{width:min(88px,27vw);height:52px;font-size:22px;}
+  /* 矮屏(SE 一类)再收一档,把省下的高度让给地图 */
+  body.stack.tight #wrap{gap:6px;--pad:6px;}
+  body.stack.tight #hud{padding:5px 8px;}
+  body.stack.tight #floorLabel{font-size:13px;}
+  body.stack.tight .stat b{font-size:12px;}
+  body.stack.tight #msg{min-height:22px;font-size:10px;margin-top:2px;}
+  body.stack.tight button{min-height:34px;font-size:11px;}
+  body.stack.tight #dpad button{height:42px;font-size:19px;}
   body.stack .mrow{font-size:10px;gap:5px;max-width:100%;}
   body.stack .mrow .mname{width:52px;}
   body.stack .mrow .mab{width:56px;font-size:9px;}
@@ -390,14 +401,21 @@ function calcDmg(mid, hp){
 function needAtk(mid){ return MON[mid][3]+1; }
 /* ================= 渲染 ================= */
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-const DPR=Math.min(3,Math.max(1,Math.round(window.devicePixelRatio||1)));
-cv.width=BASE*DPR; cv.height=BASE*DPR;
-ctx.setTransform(DPR,0,0,DPR,0,0);
-ctx.imageSmoothingEnabled=false;
 const bg=document.createElement('canvas');           // 静态层:墙与地板
-bg.width=BASE*DPR; bg.height=BASE*DPR;
 const bx=bg.getContext('2d');
-bx.setTransform(DPR,0,0,DPR,0,0); bx.imageSmoothingEnabled=false;
+const DPR=Math.min(3,Math.max(1,Math.round(window.devicePixelRatio||1)));
+let devW=BASE*DPR;                                   // 画布的设备像素边长
+/* 尺寸按「每格多少设备像素」来定,取 8 的倍数,精灵就是整数倍放大,不会有毛边 */
+function setCanvasSize(dw){
+  if(dw===devW && cv.width===dw) return;
+  devW=dw;
+  cv.width=cv.height=dw; bg.width=bg.height=dw;
+  const sc=dw/BASE;                                  // 逻辑坐标(440)→ 设备像素
+  ctx.setTransform(sc,0,0,sc,0,0); ctx.imageSmoothingEnabled=false;
+  bx.setTransform(sc,0,0,sc,0,0); bx.imageSmoothingEnabled=false;
+  if(typeof floors!=='undefined'&&floors){ buildBg(); markDirty(); }
+}
+setCanvasSize(BASE*DPR);
 function buildBg(){
   const g=floors[pos.f];
   for(let r=0;r<N;r++) for(let c=0;c<N;c++)
@@ -411,7 +429,7 @@ function sprFor(ch){
 function render(){
   dirty=false;
   const g=floors[pos.f];
-  ctx.drawImage(bg,0,0,BASE*DPR,BASE*DPR,0,0,BASE,BASE);
+  ctx.drawImage(bg,0,0,devW,devW,0,0,BASE,BASE);
   for(let r=0;r<N;r++) for(let c=0;c<N;c++){
     const ch=g[r][c];
     if(ch==='#'||ch==='.') continue;
@@ -751,40 +769,53 @@ const TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints||0)>0 ||
   (window.matchMedia && window.matchMedia('(hover:none) and (pointer:coarse)').matches);
 if(TOUCH) document.body.classList.add('touch');
 
-/* 只用 11 的倍数,且每格边长是 8 的倍数 —— 保证像素放大是整数倍,不会出现毛边 */
-const WSTEP=[176,264,352,440,528,616,704];
-function pickWidth(avail){ let w=WSTEP[0]; for(let i=0;i<WSTEP.length;i++) if(WSTEP[i]<=avail) w=WSTEP[i]; return w; }
+/* 地图尺寸:先按可用空间算出每格的设备像素数(8 的倍数),再换算回 CSS 宽度 */
+const MAXCSS=760;                       // 大屏上的上限,免得地图大到离谱
+function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
 function vpSize(){
-  const v=window.visualViewport;
-  return { w:Math.round(v?v.width:window.innerWidth), h:Math.round(v?v.height:window.innerHeight) };
+  const v=window.visualViewport, de=document.documentElement;
+  const w=window.innerWidth, h=window.innerHeight;
+  return { w:Math.round(Math.min(w, (de&&de.clientWidth)||w)),
+           h:Math.round(Math.min(h, (de&&de.clientHeight)||h, (v&&v.height)||h)) };
 }
 function setCW(w){ document.documentElement.style.setProperty('--cw',w+'px'); }
-function curCW(){
-  const v=window.getComputedStyle(document.documentElement).getPropertyValue('--cw');
-  const n=parseInt(v,10); return isNaN(n)?440:n;
+function applyWidth(availCss){
+  const cap=Math.max(120,Math.min(availCss,MAXCSS));
+  let tile=Math.floor(cap*DPR/(N*8))*8;              // 每格的设备像素,8 的倍数
+  tile=Math.max(16,tile);
+  setCanvasSize(tile*N);
+  setCW(devW/DPR);   // 允许小数,保证 CSS 尺寸乘 DPR 后正好落在设备像素上
+}
+/* 上下两块的高度跟字号、换行都有关,估不准 —— 直接量,再迭代两轮收敛 */
+function chromeH(){
+  const hud=document.getElementById('hud'), ctl=document.getElementById('controls');
+  return (hud&&hud.offsetHeight||0)+(ctl&&ctl.offsetHeight||0);
+}
+function wrapPad(){
+  const w=document.getElementById('wrap');
+  const cs=w&&window.getComputedStyle?window.getComputedStyle(w):null;
+  if(!cs) return {x:24,y:24};
+  return { x:num(cs.paddingLeft)+num(cs.paddingRight),
+           y:num(cs.paddingTop)+num(cs.paddingBottom) };
 }
 function fitLayout(){
   const vp=vpSize(), vw=vp.w, vh=vp.h, cls=document.body.classList;
   const land  = vw>vh && vh<560;            // 横屏手机
   const stack = !land && vw<780;            // 竖屏手机 / 竖屏小平板
   cls.toggle('land',land); cls.toggle('stack',stack);
+  cls.toggle('tight', stack&&vh<720);
   cls.toggle('showpad', TOUCH||stack||land);
-  const pad = land?16:24;                   // 左右内边距合计
-  let availW, availH;
-  if(stack){ availW=vw-pad;               availH=vh-330; }   // 上方状态条 + 下方操作区的预算
-  else if(land){ availW=vw-180-8-pad;     availH=vh-pad;  }
-  else { availW=vw-220-12-pad;            availH=vh-pad;  }
-  setCW(pickWidth(Math.max(0,Math.min(availW,availH)-8)));    // 减掉 canvas 的 4px 边框
-  if(stack) requestAnimationFrame(()=>shrinkIfOverflow(0));
-}
-/* 各家手机的状态栏/地址栏高度差别很大,估不准就量一次再收一档 */
-function shrinkIfOverflow(n){
-  if(n>3) return;
-  if(document.documentElement.scrollHeight<=vpSize().h+2) return;
-  const i=WSTEP.indexOf(curCW());
-  if(i<=0) return;
-  setCW(WSTEP[i-1]);
-  requestAnimationFrame(()=>shrinkIfOverflow(n+1));
+  const gap = stack?8:12;
+  for(let i=0;i<4;i++){
+    const pad=wrapPad();
+    let availW, availH;
+    if(stack){ availW=vw-pad.x;                 availH=vh-pad.y-chromeH()-gap*2; }
+    else if(land){ availW=vw-180-gap-pad.x;     availH=vh-pad.y; }
+    else { availW=vw-220-gap-pad.x;             availH=vh-pad.y; }
+    const before=devW;
+    applyWidth(Math.min(availW,availH)-8);    // 减掉 canvas 的 4px 边框
+    if(devW===before) break;
+  }
 }
 let fitQueued=false;
 function scheduleFit(){

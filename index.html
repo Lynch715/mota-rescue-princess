@@ -71,14 +71,15 @@
   .mrow .mdmg{margin-left:auto;text-align:right;flex:none;}
   .dmg-safe{color:#7ae87a;} .dmg-mid{color:#ffd054;} .dmg-high{color:#ff9040;} .dmg-dead{color:#ff5050;}
   #shop .srow{margin-top:10px;display:flex;gap:8px;}
-  #slots .srow{display:flex;flex-direction:column;gap:8px;width:min(280px,86vw);margin-top:8px;}
+  #slots .srow,#menu .srow{display:flex;flex-direction:column;gap:8px;width:min(280px,86vw);margin-top:8px;}
+  #menu .srow button{margin:0;}
   #slots .srow button{margin:0;font-size:12px;padding:8px;text-align:left;}
   #tele .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:min(280px,80vw);margin-top:10px;}
   #tele .tgrid button{margin:0;padding:10px 0;font-size:13px;}
   #tipTouch{display:none;}
 
   /* ---------- 方向键 ---------- */
-  #dpad{display:none;margin-top:10px;}
+  #dpad{display:none;margin-top:14px;padding-top:12px;border-top:2px solid #2c2542;}
   body.showpad #dpad{display:block;}
   #dpad .drow{display:flex;justify-content:center;gap:6px;margin-top:6px;}
   #dpad button{flex:none;width:64px;height:48px;font-size:20px;min-height:0;padding:0;}
@@ -110,7 +111,8 @@
   body.stack #controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:6px;}
   body.stack button{min-height:40px;}
   body.stack #controls .btnRow{display:contents;}
-  body.stack #dpad{grid-column:1/-1;margin-top:1px;}
+  body.stack #dpad{grid-column:1/-1;margin-top:14px;padding-top:12px;
+    border-top:2px solid #2c2542;}
   body.stack #dpad button{width:min(88px,27vw);height:52px;font-size:22px;}
   /* 矮屏(SE 一类)再收一档,把省下的高度让给地图 */
   body.stack.tight #wrap{gap:6px;--pad:6px;}
@@ -133,10 +135,11 @@
   body.land #keys{margin:4px 0;}
   body.land .keyItem{font-size:10px;}
   body.land #msg{min-height:26px;font-size:10px;margin-top:4px;padding-top:4px;}
-  body.land #controls{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+  body.land #controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
   body.land #controls .btnRow{display:contents;}
   body.land button{min-height:38px;font-size:11px;min-width:0;}
-  body.land #dpad{grid-column:1/-1;margin-top:2px;}
+  body.land #dpad{grid-column:1/-1;margin-top:10px;padding-top:8px;
+    border-top:2px solid #2c2542;}
   body.land #dpad button{width:50px;height:38px;font-size:16px;}
 
   /* ---------- 小屏上覆盖层铺满整屏,避免挤在地图那一小块里 ---------- */
@@ -157,7 +160,7 @@
       <h2>魔 塔</h2>
       <p>魔王攻陷了王国,将公主囚禁在二十层魔塔之巅。<br><br>
       勇者啊,持剑而上。<br>钥匙开门,宝石强身,血瓶续命——<br>每一步都要精打细算。<br><br>
-      塔顶,公主在等你。</p>
+      塔顶,公主在等你。<br><br><span style="color:#8a80a8;font-size:12px">救出公主不是终点——塔会塌,你得带她跑回一层的塔门。</span></p>
       <p class="tip" id="tipKb">方向键 / WASD 移动 · 撞击怪物战斗<br>
       M 手册 · T 传送 · Ctrl+S 存档 · L 读档 · Esc 关闭</p>
       <p class="tip" id="tipTouch">在地图上滑动移动 · 也可点格子或用下方方向键<br>
@@ -202,6 +205,26 @@
       <div class="tgrid" id="teleGrid"></div>
       <button onclick="hide('tele')">取 消</button>
     </div>
+    <div class="overlay" id="dbl">
+      <h2 style="font-size:18px;letter-spacing:3px;">加 倍 老 人</h2>
+      <p>「小子,我这辈子只帮一个人。<br>攻击还是防御,你挑一样,我让它翻一倍。<br><br>挑完可就没有第二次了。」</p>
+      <p id="dblNow" style="color:#8a80a8;font-size:12px;margin-top:6px;"></p>
+      <div class="srow" style="display:flex;gap:10px;">
+        <button onclick="doDouble('atk')">攻击翻倍</button>
+        <button onclick="doDouble('def')">防御翻倍</button>
+      </div>
+      <button onclick="hide('dbl')">再 想 想</button>
+    </div>
+    <div class="overlay" id="menu">
+      <h2 style="font-size:18px;letter-spacing:3px;">菜 单</h2>
+      <div class="srow">
+        <button onclick="hide('menu');openSlots('save')">存 档</button>
+        <button onclick="hide('menu');openSlots('load')">读 档</button>
+        <button onclick="toggleMute()" id="muteBtn">声音 开</button>
+        <button onclick="hide('menu');askRestart()">重 新 开 始</button>
+      </div>
+      <button onclick="hide('menu')">关 闭</button>
+    </div>
     <div class="overlay" id="slots">
       <h2 style="font-size:18px;letter-spacing:3px;" id="slotTitle">存 档</h2>
       <div class="srow" id="slotList"></div>
@@ -240,12 +263,7 @@
     <div class="btnRow">
       <button onclick="showManual()">手册</button>
       <button onclick="openTele()" id="teleBtn">传送</button>
-      <button onclick="toggleMute()" id="muteBtn">声音 开</button>
-    </div>
-    <div class="btnRow">
-      <button onclick="openSlots('save')">存档</button>
-      <button onclick="openSlots('load')">读档</button>
-      <button onclick="askRestart()">重开</button>
+      <button onclick="openMenu()">菜单</button>
     </div>
     <div id="dpad">
       <div class="drow"><button data-d="0,-1" aria-label="上">▲</button></div>
@@ -271,7 +289,7 @@ const MON = {
   9 :["骷髅队长",   211,   77,   44,   4,  ["first"]],
   10:["暗黑骑士",   279,   92,   56,   6,  ["double"]],
   11:["吸血鬼",   358,  118,   73,   7,  ["drain"]],
-  12:["双手剑士",   358,  114,   73,   7,  ["first","double"]],
+  12:["双手剑士",   467,  145,   94,   9,  ["first","double"]],
   13:["恶魔卫士",   467,   90,   94,   9,  ["magic","first"]],
   14:["冰霜法师",   603,  102,  122,  12,  ["magic","double"]],
   15:["岩浆兽",   780,  250,  158,  16,  ["first"]],
@@ -292,41 +310,41 @@ const ITEM = {k:["黄钥匙","yk",1],
   l:["蓝钥匙","bk",1],
   m:["红钥匙","rk",1],
   g:["攻击宝石","atk",3],
-  a:["大攻击宝石","atk",13],
-  e:["巨攻击宝石","atk",24],
-  h:["秘攻击宝石","atk",86],
+  a:["大攻击宝石","atk",9],
+  e:["巨攻击宝石","atk",21],
+  h:["秘攻击宝石","atk",83],
   d:["防御宝石","def",3],
-  c:["大防御宝石","def",8],
-  f:["巨防御宝石","def",24],
-  x:["秘防御宝石","def",37],
+  c:["大防御宝石","def",6],
+  f:["巨防御宝石","def",23],
+  x:["秘防御宝石","def",36],
   p:["红血瓶","hp",50],
-  q:["大血瓶","hp",1],
+  q:["大血瓶","hp",250],
   u:["巨血瓶","hp",250],
-  z:["秘血瓶","hp",300],
-  P:["蓝血瓶","hp",50],
-  Q:["圣血瓶","hp",150],
-  R:["神血瓶","hp",450],
-  S:["龙血瓶","hp",1900],
-  s:["铁剑","atk",6],
-  t:["铁盾","def",15],
-  n:["银剑","atk",39],
-  o:["银盾","def",23],
-  w:["圣剑","atk",95],
-  v:["圣盾","def",148]};
+  z:["秘血瓶","hp",650],
+  P:["蓝血瓶","hp",150],
+  Q:["圣血瓶","hp",700],
+  R:["神血瓶","hp",750],
+  S:["龙血瓶","hp",2000],
+  s:["铁剑","atk",5],
+  t:["铁盾","def",13],
+  n:["银剑","atk",28],
+  o:["银盾","def",19],
+  w:["圣剑","atk",84],
+  v:["圣盾","def",143]};
 const DOOR = {y:["黄门","yk"],b:["蓝门","bk"],r:["红门","rk"]};
 const MAPS = [
-["###########","#p.#..1..g#","#1.#.#.#..#","#..y.#k#.##","##.#..#..k#","#..##y##.##","#.1...1..d#","#.#####.###","#k....#..U#","#@F.1.y.1.#","###########"],
+["###########","#p.#..1..g#","#1.#.#.#..#","#..y.#k#.##","##.#..#..k#","#..##y##.##","#.1...1..d#","#.#####.###","#k....#..U#","#@F!1.y.1.#","###########"],
 ["###########","#D...k...U#","#.#.###.#.#","#.#2...2#.#","#..#.k.#..#","#g.y...y.d#","#..#.2.#..#","#.#1...1#.#","#.#.###.#.#","#k...p...k#","###########"],
 ["###########","#U...3...k#","#.#######.#","#.#k.d.#3.#","#.#.###.#.#","#3#.#p#.#.#","#.#.#.#.#.#","#.#.#y#.#.#","#.#...#..g#","#D..3#..3d#","###########"],
 ["###########","#D.4.y.4.s#","#.#.#.#.#.#","#.#.#k#.#.#","#.#.#.#.#.#","#4...b...4#","#.#.#.#.#.#","#.#p#l#d#.#","#.#.#.#.#.#","#k.4.y.4.U#","###########"],
 ["###########","#U..5#g..l#","#.##.#.##.#","#..b.#.5..#","#5#..#..#5#","#..#.y.#dg#","#.#..#..#.#","#p#5.#.5#P#","#.#..#..#.#","#k#..#..#D#","###########"],
-["###########","#D.......t#","#.#######.#","#.#6.5.6#.#","#.#.....#.#","#l#.6M6.#k#","#.#..Q..#.#","#.#6.5.6#.#","#.###.###.#","#k...b...U#","###########"],
-["###########","#U.7.6.7.k#","#.#######.#","#a...y...7#","#.#######.#","#7.M.Q.6.n#","#.#######.#","#l...b...7#","#.#######.#","#k.7.6.7.D#","###########"],
+["###########","#D.......t#","#.#######.#","#.#6.5.6#.#","#.#..a..#.#","#l#.6M6.#k#","#.#..Q..#.#","#.#6.5.6#.#","#.###.###.#","#k...b...U#","###########"],
+["###########","#U.7.6.7.k#","#.#######.#","#a...y...7#","#.#######.#","#7.M.Q.6.n#","#.#######.#","#l.c.b...7#","#.#######.#","#k.7.6.7.D#","###########"],
 ["###########","#D.8#c#8.a#","#.k8#.#8ol#","##y##.##y##","#l.#...#.k#","#8.#.Q.#.8#","#..#...#..#","##b##r##b##","#l.8#.#8.Q#","#m...T...U#","###########"],
 ["###########","#U.9.#.9.k#","#.#.#c#.#.#","#9.9.b.9.9#","#.#.#.#.#.#","#.#.#Q#.#.#","#.#.#.#.#.#","#9.9.y.9.9#","#.#.#k#.#.#","#a.l.#.9.D#","###########"],
-["###########","#D.......m#","#.#######.#","#.#A...A#.#","#.#.#.#.#.#","#l#.#Q#.#A#","#.#.#.#.#.#","#.#A.c.A#.#","#.###.###.#","#k...b...U#","###########"],
-["###########","#U..B.B..m#","#.#.###.#.#","#.#..R..#.#","#.#.#M#.#.#","#l..#R#..C#","#.#.#.#.#.#","#.#..f..#.#","#.#.###.#.#","#k.B.C.B.D#","###########"],
-["###########","#D.C#e.E#f#","#.#.#.#.#.#","#.#.C.#.C.#","#.#####.#.#","#l.y.R#.#E#","##.###y#.##","#e.#E.C#fR#","#.##.#.##.#","#k.C.#.E.U#","###########"],
+["###########","#D.......m#","#.#######.#","#.#Aa..A#.#","#.#.#.#.#.#","#l#.#Q#.#A#","#.#.#.#.#.#","#.#A.c.A#.#","#.###.###.#","#k...b...U#","###########"],
+["###########","#U..B.B..m#","#.#.###.#.#","#.#e.R..#.#","#.#.#M#.#.#","#l..#R#..B#","#.#.#.#.#.#","#.#..f..#.#","#.#.###.#.#","#k.B.B.B.D#","###########"],
+["###########","#D.C#e.E#f#","#.#.#.#.#.#","#.#.C.#.C.#","#.#####.#.#","#l.y&R#.#E#","##.###y#.##","#e.#E.C#fR#","#.##.#.##.#","#k.C.#.E.U#","###########"],
 ["###########","#U.e.#.f.m#","#.G.G#G.G.#","#..y.#.y..#","#.###.###.#","#R..bwb..R#","#.###.###.#","#..y.#.y..#","#.G.G#G.G.#","#k.l.#.e.D#","###########"],
 ["###########","#D.H.H.H.k#","#.#.#.#.#.#","#H.y.e.y.H#","#.#u#.#R#.#","#.H.b.b.H.#","#.#f#.#e#.#","#H.y.f.y.H#","#.#.#.#.#.#","#l.H.H.H.U#","###########"],
 ["###########","#U..l....m#","#.#######.#","#.#I.e.I#.#","#.#.#.#.#.#","#.#f#M#u#R#","#.#.#.#.#.#","#.#I.r.I#.#","#.###.###.#","#k.e.b.f.D#","###########"],
@@ -337,81 +355,83 @@ const MAPS = [
 ["###########","#h.#.X.#.h#","#..##Z##..#","#.#..N..#.#","#.L.###.L.#","#S.x#S#h.S#","##.##.##.##","#S.N...N.S#","#.###N###.#","#h...D...x#","###########"]];
 
 /* ================= 像素画 ================= */
-const T=40, N=11, BASE=T*N;
+const T=40, N=11, BASE=T*N, SPRITE=16;
 function mkSprite(rows, pal){
-  const c=document.createElement('canvas'); c.width=8; c.height=8;
+  const n=rows.length;
+  const c=document.createElement('canvas'); c.width=n; c.height=n;
   const x=c.getContext('2d');
-  rows.forEach((row,r)=>{ for(let i=0;i<8;i++){ const ch=row[i];
+  rows.forEach((row,r)=>{ for(let i=0;i<n;i++){ const ch=row[i];
     if(ch!=='.'&&pal[ch]){ x.fillStyle=pal[ch]; x.fillRect(i,r,1,1);} }});
   return c;
 }
-const humanoid=["..hhhh..","..hffh..",".bbbbbb.","b.bbbb.b","..bbbb..","..b..b..","..l..l..",".ll..ll."];
-const slime=["........","..cccc..",".cccccc.",".cwccwc.","cccccccc","cccccccc",".cccccc.","..c..c.."];
-const skel=["..wwww..","..wkkw..","..wwww..",".wwwwww.","w.wwww.w","..w..w..","..w..w..",".ww..ww."];
-const batS=["........","c......c","cc....cc","cccccccc",".cwccwc.","..cccc..",".c.cc.c.","........"];
-const ghost=["..pppp..",".pppppp.",".pwppwp.",".pppppp.",".pppppp.",".pppppp.",".p.pp.p.","........"];
-const golem=[".gggggg.",".g.gg.g.",".gggggg.","gggggggg","g.gggg.g","g.gggg.g","..g..g..",".gg..gg."];
-const wiz=["...m....","..mmm...",".mmmmm..","..fwf...",".mmmmm..","m.mmm.m.",".mmmmm..",".m...m.."];
-const demon=["h.hhhh.h",".hhffhh.",".rrrrrr.","r.rrrr.r","..rrrr..","..r..r..","..d..d..",".dd..dd."];
-const dragon=["..k..k..",".kkkkkk.","k.kwwk.k","kkkkkkkk",".kkkkkk.","..k..k..",".k....k.","k......k"];
-const angel=["w.hhhh.w","wwhffhww","wbbbbbbw","w.bbbb.w","..bbbb..","..b..b..","..l..l..",".ll..ll."];
-const keySpr=["...ooo..","...o.o..","...ooo..","....o...","....o...","...oo...","....o...","...oo..."];
-const potSpr=["...ww...","...ww...","..cccc..",".cccccc.",".cccccc.",".cccccc.","..cccc..","........"];
-const gemSpr=["........","...cc...","..cccc..",".cccccc.",".cccccc.","..cccc..","...cc...","........"];
-const swordSpr=["......w.",".....ww.","....ww..","...ww...","o.ww....",".ooo....",".ooo....","o..o...."];
-const shieldSpr=["........",".cccccc.",".cwwwwc.",".cwccwc.",".cwwwwc.","..cccc..","...cc...","........"];
-const doorSpr=["cccccccc","c......c","c.cccc.c","c.cccc.c","c.cokc.c","c.cccc.c","c.cccc.c","cccccccc"];
 const S={};
 function buildSprites(){
-  S.floor=mkSprite(["aaaaaaaa","abaaaaba","aaaaaaaa","aaabaaaa","aaaaaaaa","abaaaaba","aaaaaaaa","aaaabaaa"],{a:"#241f33",b:"#2c2640"});
-  S.wall=mkSprite(["bbbbbbbb","baabaaab","bbbbbbbb","abaabaab","bbbbbbbb","baabaaba","bbbbbbbb","aabaabaa"],{a:"#3d3455",b:"#554a75"});
-  S.y=mkSprite(doorSpr,{c:"#8a6d1f",o:"#f0c040",k:"#f0c040"});
-  S.b=mkSprite(doorSpr,{c:"#1f4d8a",o:"#5aa0ff",k:"#5aa0ff"});
-  S.r=mkSprite(doorSpr,{c:"#8a1f1f",o:"#ff5a5a",k:"#ff5a5a"});
-  S.k=mkSprite(keySpr,{o:"#f0c040"}); S.l=mkSprite(keySpr,{o:"#5aa0ff"}); S.m=mkSprite(keySpr,{o:"#ff5a5a"});
-  S.p=mkSprite(potSpr,{w:"#c8c8d8",c:"#e04848"}); S.P=mkSprite(potSpr,{w:"#c8c8d8",c:"#4878e0"});
-  S.g=mkSprite(gemSpr,{c:"#ff6a50"}); S.d=mkSprite(gemSpr,{c:"#50a0ff"});
-  S.s=mkSprite(swordSpr,{w:"#c8d0e0",o:"#8a6d1f"}); S.w=mkSprite(swordSpr,{w:"#ffe080",o:"#f0c040"});
-  S.t=mkSprite(shieldSpr,{c:"#8a7a50",w:"#c8b880"}); S.v=mkSprite(shieldSpr,{c:"#c09020",w:"#ffe080"});
-  S.n=mkSprite(swordSpr,{w:"#e8f0ff",o:"#7a8aa0"}); S.o=mkSprite(shieldSpr,{c:"#7a8aa0",w:"#e8f0ff"});
-  S.a=mkSprite(gemSpr,{c:"#ff3020"}); S.e=mkSprite(gemSpr,{c:"#ffd0a0"});
-  S.c=mkSprite(gemSpr,{c:"#2060ff"}); S.f=mkSprite(gemSpr,{c:"#a0e0ff"});
-  S.q=mkSprite(potSpr,{w:"#c8c8d8",c:"#a020c0"}); S.u=mkSprite(potSpr,{w:"#ffe080",c:"#ff40a0"});
-  S.Q=mkSprite(potSpr,{w:"#c8c8d8",c:"#20c0a0"}); S.R=mkSprite(potSpr,{w:"#ffffff",c:"#ffd040"});
-  S.h=mkSprite(gemSpr,{c:"#ff80f0"}); S.x=mkSprite(gemSpr,{c:"#80fff0"});
-  S.z=mkSprite(potSpr,{w:"#ffe080",c:"#60f0a0"}); S.S=mkSprite(potSpr,{w:"#ffffff",c:"#ff6060"});
-  S.U=mkSprite(["......ee","....eeee","..eeeeee","eeeeeeee","...aa...","...aa...","...aa...","...aa..."],{e:"#9a8ac0",a:"#6a5a90"});
-  S.D=mkSprite(["ee......","eeee....","eeeeee..","eeeeeeee","...aa...","...aa...","...aa...","...aa..."],{e:"#9a8ac0",a:"#6a5a90"});
-  S.T=mkSprite(["..cccc..",".c....c.","c..cc..c","c.cwwc.c","c.cwwc.c","c..cc..c",".c....c.","..cccc.."],{c:"#60e0d0",w:"#ffffff"});
-  S.hero=mkSprite(humanoid,{h:"#f0c040",f:"#ffd8a8",b:"#4878e0",l:"#c8a060"});
-  S.F=mkSprite(["w..ww..w",".wwwwww.","w.pffp.w","..pffp..",".pppppp.","..pppp..","...pp...","..p..p.."],{w:"#a8e8ff",p:"#ff9ad0",f:"#ffe0c0"});
-  S.M=mkSprite(humanoid,{h:"#8a5a30",f:"#e0b890",b:"#7a5a3a",l:"#50402a"});
-  S.X=mkSprite(["..o.o...","..ooo...","..hffh..",".pppppp.","p.pppp.p","..pppp..",".pppppp.",".p.pp.p."],{o:"#f0c040",h:"#e8a030",f:"#ffe0c0",p:"#ff8ac0"});
-  S.M1=mkSprite(slime,{c:"#48c048",w:"#103010"});
-  S.M2=mkSprite(slime,{c:"#e05048",w:"#301008"});
-  S.M3=mkSprite(batS,{c:"#9a60d0",w:"#ffe040"});
-  S.M4=mkSprite(skel,{w:"#d8d8c8",k:"#181810"});
-  S.M5=mkSprite(ghost,{p:"#80c0d8",w:"#082030"});
-  S.M6=mkSprite(humanoid,{h:"#308030",f:"#60b050",b:"#6a4a2a",l:"#405030"});
-  S.M7=mkSprite(golem,{g:"#8a8a9a"});
-  S.M8=mkSprite(wiz,{m:"#8040c0",f:"#e0c0ff",w:"#ffe040"});
-  S.M9=mkSprite(skel,{w:"#e0c060",k:"#301808"});
-  S.M10=mkSprite(humanoid,{h:"#404050",f:"#8888a0",b:"#303040",l:"#202030"});
-  S.M11=mkSprite(["..kkkk..",".kkkkkk.","..ffff..","..frrf..",".kkkkkk.","k.kkkk.k","..k..k..",".kk..kk."],{k:"#282838",f:"#e8e0e8",r:"#e02020"});
-  S.M12=mkSprite(["w.hhhh..","wwhffh..","wbbbbbb.","wbbbbb.b","w.bbbb..","w.b..b..","..l..l..",".ll..ll."],{h:"#c05020",f:"#ffd8a8",b:"#a03030",l:"#703030",w:"#c8d0e0"});
-  S.M13=mkSprite(demon,{h:"#ffe040",f:"#ffb060",r:"#c03028",d:"#802018"});
-  S.M14=mkSprite(wiz,{m:"#4090d0",f:"#d8f0ff",w:"#ffffff"});
-  S.M15=mkSprite(golem,{g:"#c85028"});
-  S.M16=mkSprite(humanoid,{h:"#181820",f:"#605878",b:"#282030",l:"#181018"});
-  S.M17=mkSprite(demon,{h:"#ff8020",f:"#ffd060",r:"#e04010",d:"#902808"});
-  S.M18=mkSprite(dragon,{k:"#c8c8b0",w:"#ff4040"});
-  S.M19=mkSprite(demon,{h:"#c060ff",f:"#e0b0ff",r:"#4a1868",d:"#2a0c40"});
-  S.M20=mkSprite(angel,{w:"#f0f0ff",h:"#382848",f:"#c8b8d8",b:"#684888",l:"#483060"});
-  S.M21=mkSprite(["h.hhhh.h","hhhffhhh",".rrwwrr.","rrrrrrrr","r.rrrr.r","..rrrr..",".dd..dd.","ddd..ddd"],{h:"#ffe040",f:"#ff4040",w:"#ffffff",r:"#601878",d:"#381048"});
+  S.floor=mkSprite(["cccccccccccccccc","caaaaaaabaaaaaab","caabaaaaaaaaaaab","caaaaaaaaaabaaab","caaaabaaaaaaaaab","caaaaaaaaaaaaaab","caaaaaaaaabaaaab","caaabaaaaaaaaaab","caaaaaaaaaaabaab","caaaaaabaaaaaaab","caabaaaaaaaaaaab","caaaaaaaaaaaaaab","caaaaabaaaabaaab","caaaaaaaaaaaaaab","caaabaaaaaabaaab","bbbbbbbbbbbbbbbb"],{"a":"#2a2440","b":"#1e1a30","c":"#342d50"});
+  S.wall=mkSprite(["tttttttttttttttt","tbbbbbbbmbbbbbbb","tbbbbbbbmbbbbbbb","tbbbbbbbmbbbbbbb","sbbbbbbbmbbbbbbb","mmmmmmmmmmmmmmmm","tttmttttttttmttt","bbbmbbbbbbbbmbbb","bbbmbbbbbbbbmbbb","bbbmbbbbbbbbmbbb","mmmmmmmmmmmmmmmm","tttttttmtttttttt","bbbbbbbmbbbbbbbb","bbbbbbbmbbbbbbbb","sbbbbbbmbbbbbbbs","mmmmmmmmmmmmmmmm"],{"b":"#493d68","m":"#2a2440","s":"#8577ad","t":"#6c5e94"});
+  S.hero=mkSprite(["....._aaaa_.....","...._agggga_....","..._akkkkkka_...","..._kffffffk_...","..._kfeffefk_...","..._dffffffd_...","...__ffffff__...",".._hibbbbbbij_..","._hwbbbbbbbbcj_.","._wwmbBBBBbmcc_.","._ow_bbbbbb_cp_.",".._o_bbmmbb_p_..","...__bb__bb__...","...._ll__ll_....","..._qll__llq_...","..._rrr__rrr_..."],{"B":"#7fa8ff","_":"#0b0812","a":"#ffe081","b":"#4f7fe0","c":"#b9c4d8","d":"#8c681e","e":"#2a1f3a","f":"#ffd9b0","g":"#ffd75e","h":"#edf2ff","i":"#769be7","j":"#c8d1e1","k":"#c8952b","l":"#c8a060","m":"#37599d","o":"#a2a7b2","p":"#828997","q":"#d4b583","r":"#4b341d","w":"#e8eeff"});
+  S.F=mkSprite(["...._a_.._a_....","..._aw____wa_...",".._aww_bb_wwa_..","._awwc_hh_cwwa_.","._cww_dffd_wwc_.",".._cw_feef_wc_..","..._c_ffff_c_...","....__pppp__....","...._gppppg_....","..._gppppppg_...","..._ippppppi_...","...._ippppi_....","....._ippi_.....","......_ii_......","....._g__g_.....","....._i__i_....."],{"_":"#0b0812","a":"#bbedff","b":"#ffeeb5","c":"#76a2b2","d":"#ffe7ce","e":"#3a2030","f":"#ffe0c0","g":"#ffb0da","h":"#ffe9a0","i":"#b26c92","p":"#ff9ad0","w":"#a8e8ff"});
+  S.M=mkSprite(["...._aaaaaa_....","..._adddddda_...","..._dffffffd_...","..._cfeffefc_...","...._ffffff_....","..._hbbbbbbh_...",".._hbbbbbbbbh_..","._hbggggggggbh_.","._ibggggggggbi_.",".._ibbbbbbbbi_..","..._ibbiibbi_...","...._bb__bb_....","...._bb__bb_....","...._ll__ll_....","..._jll__llj_...","..._kkk__kkk_..."],{"_":"#0b0812","a":"#a47e5e","b":"#7a5a3a","c":"#613f22","d":"#8a5a30","e":"#2a1f1a","f":"#e0b890","g":"#f0c040","h":"#977e65","i":"#553f29","j":"#766a59","k":"#282216","l":"#50402a"});
+  S.X=mkSprite(["..._a_a__a_a_...","..._oaoaaoao_...","..._yyyyyyyy_...","..._yffffffy_...","..._bfeffefb_...","...._cffffc_....","....._pppp_.....","...._dppppd_....","..._dppppppd_...","..._pppppppp_...",".._dppppppppd_..",".._pppppppppp_..","._dppppppppppd_.","._gppggggggppg_.",".._pp______pp_..",".._hh_...._hh_.."],{"_":"#0b0812","a":"#ffe081","b":"#b2a370","c":"#b29d86","d":"#ffa4ce","e":"#3a2030","f":"#ffe0c0","g":"#b26186","h":"#8c4a6c","o":"#ffd75e","p":"#ff8ac0","y":"#ffe9a0"});
+  S.y=mkSprite(["ffffffffffffffff","fddddddddddddddf","fdccccccccccccdf","fdcppppppppppcdf","fdcpccccccccpcdf","fdcpcppppppcpcdf","fdcpcppkkppcpcdf","fdcpcppkkppcpcdf","fdcpcpppkppcpcdf","fdcpcppppppcpcdf","fdcpccccccccpcdf","fdcppppppppppcdf","fdccccccccccccdf","fddddddddddddddf","ffffffffffffffff","ffffffffffffffff"],{"c":"#f0c040","d":"#8a6a18","f":"#4a3a10","k":"#1a1208","p":"#6d5518"});
+  S.b=mkSprite(["ffffffffffffffff","fddddddddddddddf","fdccccccccccccdf","fdcppppppppppcdf","fdcpccccccccpcdf","fdcpcppppppcpcdf","fdcpcppkkppcpcdf","fdcpcppkkppcpcdf","fdcpcpppkppcpcdf","fdcpcppppppcpcdf","fdcpccccccccpcdf","fdcppppppppppcdf","fdccccccccccccdf","fddddddddddddddf","ffffffffffffffff","ffffffffffffffff"],{"c":"#5aa0ff","d":"#24528f","f":"#12294a","k":"#08101f","p":"#1c3f70"});
+  S.r=mkSprite(["ffffffffffffffff","fddddddddddddddf","fdccccccccccccdf","fdcppppppppppcdf","fdcpccccccccpcdf","fdcpcppppppcpcdf","fdcpcppkkppcpcdf","fdcpcppkkppcpcdf","fdcpcpppkppcpcdf","fdcpcppppppcpcdf","fdcpccccccccpcdf","fdcppppppppppcdf","fdccccccccccccdf","fddddddddddddddf","ffffffffffffffff","ffffffffffffffff"],{"c":"#ff5a5a","d":"#8f2424","f":"#4a1212","k":"#1f0808","p":"#701c1c"});
+  S.k=mkSprite(["....._aooa_.....","...._ab__ba_....","..._ao_.._oa_...","..._oo_.._oo_...","..._bo_.._ob_...","...._ba__ab_....","....._baab_.....","......_oo_......","......_oo_......","......_oo__.....","......_oooo_....","......_oo__.....","......_oo__.....","......_oooo_....","......_bb__.....",".......__......."],{"_":"#0b0812","a":"#f3ce6a","b":"#a8862d","o":"#f0c040"});
+  S.l=mkSprite(["....._aooa_.....","...._ab__ba_....","..._ao_.._oa_...","..._oo_.._oo_...","..._bo_.._ob_...","...._ba__ab_....","....._baab_.....","......_oo_......","......_oo_......","......_oo__.....","......_oooo_....","......_oo__.....","......_oo__.....","......_oooo_....","......_bb__.....",".......__......."],{"_":"#0b0812","a":"#7eb5ff","b":"#3f70b2","o":"#5aa0ff"});
+  S.m=mkSprite(["....._aooa_.....","...._ab__ba_....","..._ao_.._oa_...","..._oo_.._oo_...","..._bo_.._ob_...","...._ba__ab_....","....._baab_.....","......_oo_......","......_oo_......","......_oo__.....","......_oooo_....","......_oo__.....","......_oo__.....","......_oooo_....","......_bb__.....",".......__......."],{"_":"#0b0812","a":"#ff7e7e","b":"#b23f3f","o":"#ff5a5a"});
+  S.p=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#e04848","d":"#9797a2","e":"#61616c","h":"#ff9a9a","k":"#d8d8e8","w":"#c8b090"});
+  S.q=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#b040d0","d":"#9797a2","e":"#61616c","h":"#e8a0ff","k":"#d8d8e8","w":"#c8b090"});
+  S.u=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#ff40a0","d":"#9797a2","e":"#61616c","h":"#ffb0d8","k":"#d8d8e8","w":"#c8b090"});
+  S.z=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#40d090","d":"#9797a2","e":"#61616c","h":"#a0ffd0","k":"#d8d8e8","w":"#c8b090"});
+  S.P=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#4878e0","d":"#9797a2","e":"#61616c","h":"#a0c0ff","k":"#d8d8e8","w":"#c8b090"});
+  S.Q=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#20c0a0","d":"#9797a2","e":"#61616c","h":"#a0ffe8","k":"#d8d8e8","w":"#c8b090"});
+  S.R=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#ffb020","d":"#9797a2","e":"#61616c","h":"#ffe0a0","k":"#d8d8e8","w":"#c8b090"});
+  S.S=mkSprite(["....._aaaa_.....","....._kwwk_.....","....._kwwk_.....","...._akwwka_....","..._akccccca_...",".._accccccccb_..",".._kcccccccck_..","._acccccccccca_.","._kchcccccccck_.","._kchcccccccck_.","._kccccccccccK_.","._dcccccccccce_.",".._kcccccccck_..",".._dkccccccKd_..","..._dddeeedd_...","....________...."],{"K":"#8a8a9a","_":"#0b0812","a":"#e1e1ed","b":"#a4a4b0","c":"#ff5050","d":"#9797a2","e":"#61616c","h":"#ffd0d0","k":"#d8d8e8","w":"#c8b090"});
+  S.g=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_accccccccccck_.","_bccccccccccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#e03a20","d":"#55556c","h":"#ff9a80","k":"#f0f0ff"});
+  S.a=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_acccccDccccck_.","_bcccccDccccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#ff9500","d":"#55556c","h":"#ffd8a0","k":"#f0f0ff"});
+  S.e=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_accccDcDcccck_.","_bccccDcDcccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#ffe83a","d":"#55556c","h":"#fffbc0","k":"#f0f0ff"});
+  S.h=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_acccDcDcDccck_.","_bcccDcDcDccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#ff40d0","d":"#55556c","h":"#ffb0ee","k":"#f0f0ff"});
+  S.d=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_accccccccccck_.","_bccccccccccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#3060e0","d":"#55556c","h":"#a0b8ff","k":"#f0f0ff"});
+  S.c=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_acccccDccccck_.","_bcccccDccccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#20c8b0","d":"#55556c","h":"#a0f0e4","k":"#f0f0ff"});
+  S.f=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_accccDcDcccck_.","_bccccDcDcccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#9040ff","d":"#55556c","h":"#d0b0ff","k":"#f0f0ff"});
+  S.x=mkSprite(["......____......","....._aaaa_.....","...._achhca_....","..._achhhhca_...",".._achhhhhhca_..","._achhcccchhca_.","._kchcccccchck_.","_acccDcDcDccck_.","_bcccDcDcDccck_.","._kcccccccccck_.","._bkcccccccckb_.",".._bkccccccKb_..","..._bkccccKb_...","...._bkccKb_....","....._bddb_.....","......____......"],{"D":"#1a1424","K":"#7a7a9a","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#b8f0ff","d":"#55556c","h":"#e8fbff","k":"#f0f0ff"});
+  S.s=mkSprite(["..........._aac_",".........._awwk_","........._awwkd_","........_awwkd_.","......._awwkd_..","......_awwkd_...","....._awwkd_....","...._awwkd_.....","..._awwkd_......",".._ewwkd_.......","._egkdd_........","_gggg__.........","._gbgg_.........","_ebbf_..........","ebbf_...........","iif_............"],{"_":"#0b0812","a":"#ffffff","b":"#3a2a18","c":"#8b8b9c","d":"#4a4a5a","e":"#a48d50","f":"#614c16","g":"#8a6d1f","i":"#291d11","k":"#6a6a80","w":"#c8d0e0"});
+  S.n=mkSprite(["..........._aac_",".........._awwk_","........._awwkd_","........_awwkd_.","......._awwkd_..","......_awwkd_...","....._awwkd_....","...._awwkd_.....","..._awwkd_......",".._ewwkd_.......","._egkdd_........","_gggg__.........","._gbgg_.........","_ebbf_..........","ebbf_...........","iif_............"],{"_":"#0b0812","a":"#ffffff","b":"#3a2a18","c":"#8b8b9c","d":"#4a4a5a","e":"#97a4b5","f":"#556170","g":"#7a8aa0","i":"#291d11","k":"#6a6a80","w":"#e8f0ff"});
+  S.w=mkSprite(["..........._aac_",".........._awwk_","........._awwkd_","........_awwkd_.","......._awwkd_..","......_awwkd_...","....._awwkd_....","...._awwkd_.....","..._awwkd_......",".._ewwkd_.......","._egkdd_........","_gggg__.........","._gbgg_.........","_ebbf_..........","ebbf_...........","iif_............"],{"_":"#0b0812","a":"#ffffff","b":"#3a2a18","c":"#8b8b9c","d":"#4a4a5a","e":"#f3ce6a","f":"#a8862d","g":"#f0c040","i":"#291d11","k":"#6a6a80","w":"#fff0a0"});
+  S.t=mkSprite(["..____________..","._aaaaaaaaaaaa_.","._kccccccccccK_.","._kchhhhhhhccK_.","._kchcccccchcK_.","._kchcwwwwchcK_.","._kchcwwwwchcK_.","._kchcccccchcK_.","._bchhhhhhhccK_.",".._bcccccccckd_.","..._bccccccKb_..","...._bccccKb_...","....._bccKb_....","......_bdb_.....",".......___......","................"],{"K":"#5a5a70","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#c8b880","d":"#3f3f4e","h":"#8a7a50","k":"#f0f0ff","w":"#ffffff"});
+  S.o=mkSprite(["..____________..","._aaaaaaaaaaaa_.","._kccccccccccK_.","._kchhhhhhhccK_.","._kchcccccchcK_.","._kchcwwwwchcK_.","._kchcwwwwchcK_.","._kchcccccchcK_.","._bchhhhhhhccK_.",".._bcccccccckd_.","..._bccccccKb_..","...._bccccKb_...","....._bccKb_....","......_bdb_.....",".......___......","................"],{"K":"#5a5a70","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#e8f0ff","d":"#3f3f4e","h":"#7a8aa0","k":"#f0f0ff","w":"#ffffff"});
+  S.v=mkSprite(["..____________..","._aaaaaaaaaaaa_.","._kccccccccccK_.","._kchhhhhhhccK_.","._kchcccccchcK_.","._kchcwwwwchcK_.","._kchcwwwwchcK_.","._kchcccccchcK_.","._bchhhhhhhccK_.",".._bcccccccckd_.","..._bccccccKb_..","...._bccccKb_...","....._bccKb_....","......_bdb_.....",".......___......","................"],{"K":"#5a5a70","_":"#0b0812","a":"#f3f3ff","b":"#a8a8b2","c":"#ffe080","d":"#3f3f4e","h":"#c09020","k":"#f0f0ff","w":"#ffffff"});
+  S.U=mkSprite(["................","..........._____",".........._aaaaa","........___bbbbb","......._aaabbbbb",".....___bbbbbbbb","...._aaabbbbbbbb","..___bbbbbbbbbbb","._aaabbbbbbbbbbb","._bbbbbbbbbbbbbb","._cccccccccccccc","..______________","................","................","................","................"],{"_":"#0b0812","a":"#d4cbed","b":"#8a7cb8","c":"#615781"});
+  S.D=mkSprite(["................","_____...........","aaaaa_..........","bbbbb___........","bbbbbaaa_.......","bbbbbbbb___.....","bbbbbbbbaaa_....","bbbbbbbbbbb___..","bbbbbbbbbbbaaa_.","bbbbbbbbbbbbbb_.","cccccccccccccc_.","______________..","................","................","................","................"],{"_":"#0b0812","a":"#988eb5","b":"#514668","c":"#393149"});
+  S.T=mkSprite(["....__cccc__....","..._cc____cc_...",".._c________c_..","._a_._wwww_._a_.","._b__w____w__b_.","_a__w__aa__w__a_","_c_d__acca__d_c_","_c_w__cccc__w_c_","_c_w__bccb__w_c_","_c_e_._bb_._e_c_","_b__w______w__b_","._a__wd__dw__a_.","._b_._ewwe_._b_.",".._c________c_..","..._cc____cc_...","....__cccc__...."],{"_":"#0b0812","a":"#83e7da","b":"#439d92","c":"#60e0d0","d":"#ffffff","e":"#b2b2b2","w":"#ffffff"});
+  S['&']=mkSprite(["......____......","....._aaaa_.....","...._akkkka_....","..._affffffa_...","..._bfeffefb_...","...._ffffff_....","...._wwwwww_....","..._cwwwwwwc_.._",".._drrrrrrrrd__h","._drrrrrrrrrrd_g","._rrrrrrrrrrrr_g","._irrrrrrrrrri_g",".._rrrrrrrrrr__g",".._irriiiirri__g","..._rr____rr_._g","..._jj_.._jj_._l"],{"_":"#0b0812","a":"#8b72a4","b":"#4a3461","c":"#f3f3ff","d":"#a48bce","e":"#2a1f3a","f":"#ffd9b0","g":"#c8a060","h":"#d4b583","i":"#614a86","j":"#342243","k":"#6a4a8a","l":"#8c7043","r":"#8a6ac0","w":"#f0f0ff"});
+  S['!']=mkSprite(["................","....gggggggg....","...gggggggggg...","..gg........gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","..gg.dddddd.gg..","gggggggggggggggg"],{"d":"#141020","g":"#8a7ba8"});
+  S.M1=mkSprite(["......____......","....__aaaa__....","..._aaccccaa_...",".._acccccccca_..","._acccccccccca_.","._ccwwccccwwcc_.","._ccwkccccwkcc_.","_acccccccccccca_","_cccccccccccccc_","_cccccccccccccb_","_bcccckkcccccc_.","._cccccccccccc_.","._eddeddddedde_.",".._ee_eeee_ee_..","...__.____.__...","................"],{"_":"#0b0812","a":"#72ce72","b":"#348634","c":"#4ac04a","d":"#2a7a2a","e":"#1d551d","k":"#0f2a0f","w":"#ffffff"});
+  S.M2=mkSprite(["......____......","....__aaaa__....","..._aaccccaa_...",".._acccccccca_..","._acccccccccca_.","._ccwwccccwwcc_.","._ccwkccccwkcc_.","_acccccccccccca_","_cccccccccccccc_","_cccccccccccccb_","_bcccckkcccccc_.","._cccccccccccc_.","._eddeddddedde_.",".._ee_eeee_ee_..","...__.____.__...","................"],{"_":"#0b0812","a":"#e77670","b":"#9d3832","c":"#e05048","d":"#9a2a24","e":"#6c1d19","k":"#3a0f08","w":"#ffffff"});
+  S.M3=mkSprite(["__............__","aa_.........._aa","cca_...__..._acc","ccca_._aa_._accc","cccca_acca_acccc","bccccaccccaccccb","_bccwwccccwwccb_","._ccwkccccwkcc_.","._bccccccccccb_.",".._bckkkkkkcb_..","..._bccbbccb_...","...._cb__bc_....","..._cb_.._bc_...","....__....__....","................","................"],{"_":"#0b0812","a":"#b083da","b":"#6c4392","c":"#9a60d0","k":"#2a0f3a","w":"#ffe040"});
+  S.M4=mkSprite([".....______.....","...._aaaaaa_....","..._awwwwwwa_...","..._wkkwwkkw_...","..._wkkwwkkw_...","..._bwwwwwwb_...","...._bkkkkb_....","...___wwww___...",".._awawwwwawa_..","._aw_wwwwww_wa_.","._ww_wkwkwk_ww_.","._bb_bwwwwb_bb_.","..__._wbbw_.__..","...._ab__ba_....","..._aw_.._wa_...",".._wbb_.._bbw_.."],{"_":"#0b0812","a":"#e4e4d7","b":"#9a9a8f","k":"#1a1a12","w":"#dcdccc"});
+  S.M5=mkSprite(["....__aaaa__....","..._aappppaa_...",".._appppppppa_..","._appppppppppa_.","._ppwwppppwwpp_.","._ppwkppppwkpp_.","._pppppppppppp_.","._pppppppppppp_.","._pppkkkkkkppp_.","._pppppppppppp_.","._pppppppppppp_.","._pppppppppppp_.","._ppbppbbppbpp_.","._bp_bp__pb_pb_.",".._b__b__b__b_..","..._.._.._.._..."],{"_":"#0b0812","a":"#9fd3e5","b":"#5c8b9b","k":"#0a2233","p":"#84c6de","w":"#ffffff"});
+  S.M6=mkSprite(["...._aaaaaa_....","..._ahhhhhha_...","..._hffffffh_...","..._hfeffefh_...","..._cffwwffc_...","...__ffffff__...",".._ddbbbbbbdd_..","._dbbbbbbbbbbd_.","._bbgBBBBBBgbb_.","._bb_bbbbbb_bb_.","._gg_bbggbb_gg_.","..___bb__bb___..","...._bb__bb_....","...._ll__ll_....","..._ill__lli_...","..._jjj__jjj_..."],{"B":"#8a6440","_":"#0b0812","a":"#5d975d","b":"#6a4a2a","c":"#215521","d":"#8b7259","e":"#12280f","f":"#63b552","g":"#4a341d","h":"#2f7a2f","i":"#69765e","j":"#1c2414","l":"#3f5030","w":"#ffffff"});
+  S.M7=mkSprite(["..____________..","._aaaaaaaaaaaa_.","_agggggggggggga_","_ggkkggggggkkgg_","_ggkkggggggkkgg_","_gggggggggggggg_","_ggggkkkkkkgggg_","agbggggggggggbga","gg_gggggggggg_gg","gg_gggggggggg_gg","bb_gggggggggg_bb","___gggbbbbggg___",".._ggg____ggg_..",".._ggg_.._ggg_..","._aggg_.._ggga_.","._bbbb_.._bbbb_."],{"_":"#0b0812","a":"#a6a6b3","b":"#63636f","g":"#8d8d9e","k":"#4a4a58"});
+  S.M8=mkSprite(["......_aa_......","....._amma_.....","...._ammmma_....","..._ammmmmma_...",".._ammmmmmmma_..","._mbbmmmmmmbbm_.","..___ffffff___..","..._fweeewwf_...","...._ffffff_....","..._ammmmmma__..",".._ammmmmmmmaw_.","._ammmmmmmmmc_..","._mmmmmmmmmm_...","_ammmmmmmmmma_..","_bmmbbbbbbmmb_..","._bb______bb_..."],{"_":"#0b0812","a":"#9c6ace","b":"#5a2d86","c":"#b29d2d","e":"#2a1038","f":"#e6c8ff","m":"#8040c0","w":"#ffe040"});
+  S.M9=mkSprite([".....______.....","...._aaaaaa_....","..._awwwwwwa_...","..._wkkwwkkw_...","..._wkkwwkkw_...","..._bwwwwwwb_...","...._bkkkkb_....","...___wwww___...",".._awawwwwawa_..","._aw_wwwwww_wa_.","._ww_wkwkwk_ww_.","._bb_bwwwwb_bb_.","..__._wbbw_.__..","...._ab__ba_....","..._aw_.._wa_...",".._wbb_.._bbw_.."],{"_":"#0b0812","a":"#ecd483","b":"#a18c43","k":"#3a2008","w":"#e6c860"});
+  S.M10=mkSprite(["...._aaaaaa_....","..._ahhhhhha_...","..._hkkkkkkh_...","..._hkeeeekh_...","..._dkkkkkkd_...","...__hhhhhh__...",".._ffbbbbbbff_..","._fbbbbbbbbbbf_.","_gbbibBBBBbibbj_","_wbb_bbbbbb_bbc_","_wii_bbiibb_iic_","_m___bb__bb___o_","._.._bb__bb_.._.","...._ll__ll_....","..._pll__llp_...","..._qqq__qqq_..."],{"B":"#4a4a60","_":"#0b0812","a":"#676775","b":"#2e2e3c","c":"#9aa4b8","d":"#2a2a37","e":"#ff5050","f":"#5c5c67","g":"#d4dae7","h":"#3c3c4e","i":"#20202a","j":"#b0b8c8","k":"#23232f","l":"#1e1e28","m":"#8c929d","o":"#6c7381","p":"#505057","q":"#0e0e12","w":"#c8d0e0"});
+  S.M11=mkSprite(["...__________...",".._akaaaaaaka_..","._ak_kkkkkk_ka_.","._kk_kffffk_kk_.","._kk_frffrf_kk_.","._kk_ffwwff_kk_.","._kkakkkkkkakk_.","_akkbbbbbbbbkka_","_kkcbbbbbbbbckk_","_kk_bbbbbbbb_kk_","_cc_bbddddbb_cc_",".___bb____bb___.","..._bb_.._bb_...","..._kk_.._kk_...",".._akk_.._kka_..",".._eee_.._eee_.."],{"_":"#0b0812","a":"#55555d","b":"#7a1020","c":"#1a1a21","d":"#550b16","e":"#0e0e11","f":"#e8e0e8","k":"#25252f","r":"#e02020","w":"#ffffff"});
+  S.M12=mkSprite(["..._aaaaaa__c_..",".._ahhhhhha_w_..",".._hffffffhcd_..",".._hfeffefhw_...",".._iffffffwd_...","..__ffffffw_....","._jjbbbbbwbj_...","_jbbbbbbwbbbj_..","_bbkBBBBwBbkb_..","_bb_bbbwbbb_b_..","_kk_bbwkkbb_k_..",".___bbm__bb__...","..._bb_._bb_....","..._ll_._ll_....",".._oll_._llo_...",".._ppp_._ppp_..."],{"B":"#c05050","_":"#0b0812","a":"#ce7651","b":"#a03030","c":"#e4eaf7","d":"#9aa0ac","e":"#3a1f10","f":"#ffd8a8","h":"#c05020","i":"#863816","j":"#b55e5e","k":"#702222","l":"#703030","m":"#614c16","o":"#8f5e5e","p":"#341616","w":"#dce4f5"});
+  S.M13=mkSprite(["._a_...___.._a_.","._ba_._ccc__ah_.",".._ba_crrrc_bb_.","..._rcfffffc__..","..._rfyffyfr_...","..._rffwwffr_...",".._crrrrrrrrc_..","._crrrrrrrrrrc_.","._rredddddderr_.","._rr_rrrrrr_rr_.","._ee_rreerr_ee_.","..___rr__rr___..","...._rr__rr_....","...._dd__dd_....","..._gdd__ddg_...",".._diii__iiid_.."],{"_":"#0b0812","a":"#ffe76a","b":"#b29d2d","c":"#ce5e57","d":"#802018","e":"#86221c","f":"#ffb060","g":"#9c514b","h":"#ffe040","i":"#5a1611","r":"#c03028","w":"#ffffff","y":"#3a0f08"});
+  S.M14=mkSprite(["......_aa_......","....._amma_.....","...._ammmma_....","..._ammmmmma_...",".._ammmmmmmma_..","._mbbmmmmmmbbm_.","..___ffffff___..","..._fweeewwf_...","...._ffffff_....","..._ammmmmma__..",".._ammmmmmmmaw_.","._ammmmmmmmmc_..","._mmmmmmmmmm_...","_ammmmmmmmmma_..","_bmmbbbbbbmmb_..","._bb______bb_..."],{"_":"#0b0812","a":"#659bda","b":"#295992","c":"#b2b2b2","e":"#0a2038","f":"#d8f0ff","m":"#3a7fd0","w":"#ffffff"});
+  S.M15=mkSprite(["..____________..","._aaaaaaaaaaaa_.","_agggggggggggga_","_ggkkggggggkkgg_","_ggkkggggggkkgg_","_gggggggggggggg_","_ggggkkkkkkgggg_","agbggggggggggbga","gg_gggggggggg_gg","gg_gggggggggg_gg","bb_gggggggggg_bb","___gggbbbbggg___",".._ggg____ggg_..",".._ggg_.._ggg_..","._aggg_.._ggga_.","._bbbb_.._bbbb_."],{"_":"#0b0812","a":"#d47657","b":"#8c381c","g":"#c85028","k":"#6a1a08"});
+  S.M16=mkSprite(["......____......","....._aaaa_.....","...._akkkka_....","...._kffffk_....","...._keeeek_....","...._bffffb_....","..._._kkkk_._...",".._c__kkkk__c_..","._cw_akkkka_wc_.","._dw_kkkkkk_wd_.",".._d_kkbbkk_d_..","...__kk__kk__...","...._kk__kk_....","...._nn__nn_....","..._ngg__ggn_...","....___..___...."],{"_":"#0b0812","a":"#4c4c54","b":"#121219","c":"#b0bbd4","d":"#6c768c","e":"#c060ff","f":"#5a5270","g":"#08060d","k":"#1a1a24","n":"#0c0812","w":"#9aa8c8"});
+  S.M17=mkSprite(["..._a__aa__a_...",".._ay_ayya_ya_..","._yyyayyyyayyy_.",".._rrffffffrr_..",".._rfyffffyfr_..",".._rffwwwwffr_..","._brrrrrrrrrrb_.","_brrrrrrrrrrrrb_","brrcddddddddcrrb","ccr_rrrrrrrr_rcc","__c_rrrccrrr_c__","..__rrr__rrr__..","..._rrr__rrr_...","..._ddd__ddd_...",".._edgg__ggde_..","._dgg__..__ggd_."],{"_":"#0b0812","a":"#ffed83","b":"#ed6a4b","c":"#a22d11","d":"#8a2408","e":"#a4543e","f":"#ffd8a0","g":"#611906","r":"#e84018","w":"#ffffff","y":"#ffe860"});
+  S.M18=mkSprite(["._a_........_a_.","._ka_......_ak_.","_akka_...._akka_","_kkkka____akkkk_","akkkkb_cc_bkkkka","kkkkb_crrc_bkkkk","kkkb_chhhhc_bkkk","kkb__hwwwwh__bkk","bb_._dhhhhd_._bb","__..._hhhh_...__","...._cdhhdc_....","..._ch_hh_hc_...","..._hh_dd_hh_...","..._hh____hh_...",".._cdd_.._ddc_..","._hd__....__dh_."],{"_":"#0b0812","a":"#d8d8c4","b":"#90907e","c":"#ececd7","d":"#a1a18f","h":"#e6e6cc","k":"#cdcdb4","r":"#ff3030","w":"#ffffff"});
+  S.M19=mkSprite(["._a_...___.._a_.","._ba_._ccc__ah_.",".._ba_crrrc_bb_.","..._rcfffffc__..","..._rfyffyfr_...","..._rffwwffr_...",".._crrrrrrrrc_..","._crrrrrrrrrrc_.","._rredddddderr_.","._rr_rrrrrr_rr_.","._ee_rreerr_ee_.","..___rr__rr___..","...._rr__rr_....","...._dd__dd_....","..._gdd__ddg_...",".._diii__iiid_.."],{"_":"#0b0812","a":"#ce83ff","b":"#8643b2","c":"#7e519c","d":"#2f0f48","e":"#3f165a","f":"#e0b0ff","g":"#5d4470","h":"#c060ff","i":"#210a32","r":"#5a2080","w":"#ffffff","y":"#1a0028"});
+  S.M20=mkSprite(["a_..._cccc_..._a","wa_.._oooo_.._aw","wwa__dffffd__aww","wwwa_feffef_awww","wwwg_hffffh_gwww","wwg___ffff___gww","wg__iibbbbii__gw","g__ibbbbbbbbi__g","_._bbjBBBBbjb_._",".._bb_bbbbb_bi_.",".._jj_bbjjb_jj_.","...___bb__bi__..","....._bb__bb_...","....._ll__ll_...","...._kll__llk_..","...._mmm__mmm_.."],{"B":"#8a68b0","_":"#0b0812","a":"#f5f5ff","b":"#6a4890","c":"#ffeeb5","d":"#e1d4ed","e":"#2a1a3a","f":"#d8c8e8","g":"#a9a9b2","h":"#978ca2","i":"#8b70a8","j":"#4a3265","k":"#705e83","l":"#483060","m":"#221630","o":"#ffe9a0","w":"#f2f2ff"});
+  S.M21=mkSprite(["_a_...____._a_..","_ha_._bbbb__ha_.","_cha_brrrrb_hhh_","._ccbrffffrbcc_.","..__rrfyyfrr__..","..__rrfwwfrr__..","._bbrrrrrrrrbb_.","_brrrrrrrrrrrrb_","brredddddddderrb","rre_rrrrrrrr_err","ee__rrreerrr__ee","__._rrr__rrr_.__","..._rrr__rrr_...","..._ddd__ddd_...",".._gddd__dddg_..","._diiii__iiiid_."],{"_":"#0b0812","a":"#ffe76a","b":"#9750ad","c":"#b29d2d","d":"#3d1150","e":"#551569","f":"#ff5050","g":"#684576","h":"#ffe040","i":"#2b0c38","r":"#7a1e96","w":"#ffffff","y":"#ffffff"});
 }
 /* ================= 状态 ================= */
 let floors, pos, st, hasManual, hasTele, visited, shopCnt;
 let dead=false, won=false, steps=0, t0=0;
+const ESCAPE_STEPS=540, TELE_COST=60;   // 逃塔预算:最短路 322 步,给 1.7 倍
+let phase='climb', escLeft=0, trail=null, dblCell=null, doubled=null;
 let facing=1, bob=0;
 let anims=[];              // 漂浮文字
 let dirty=true;            // 脏标记:只有变化时才重绘
@@ -428,6 +448,7 @@ function newGame(){
   visited=floors.map(()=>false); visited[pos.f]=true;
   shopCnt=[0,0,0]; dead=false; won=false; anims=[];
   steps=0; t0=Date.now(); facing=1; bob=0;
+  phase='climb'; escLeft=0; trail=null; dblCell=null; doubled=null;
   OVERLAYS.forEach(id=>{ if(id!=='intro') hide(id); });   // 开新局时清掉残留弹窗
   msg("冒险开始了。旁边的仙子有话要说。");
   buildBg(); updatePanel(); markDirty();
@@ -498,6 +519,9 @@ function render(){
       ctx.fillText(txt,c*T+T/2,r*T+T-2);
     }
   }
+  // 逃塔时公主跟在身后一格
+  if(phase==='escape'&&trail&&trail.f===pos.f&&(trail.r!==pos.r||trail.c!==pos.c))
+    ctx.drawImage(S.X,trail.c*T,trail.r*T,T,T);
   // 勇者(按朝向翻转 + 走动微跳)
   ctx.save();
   ctx.translate(pos.c*T+T/2, pos.r*T+T/2+bob);
@@ -527,7 +551,9 @@ function updatePanel(){
   sHp.textContent=st.hp; sAtk.textContent=st.atk; sDef.textContent=st.def; sGold.textContent=st.gold;
   kY.textContent=st.yk; kB.textContent=st.bk; kR.textContent=st.rk;
   hpfill.style.width=Math.max(0,Math.min(100,st.hp/maxHp*100))+"%";
-  floorLabel.textContent="第 "+(pos.f+1)+" 层";
+  if(phase==='escape'){
+    floorLabel.innerHTML="第 "+(pos.f+1)+" 层 · <b style='color:#ff6a6a'>剩 "+Math.max(0,escLeft)+" 步</b>";
+  } else floorLabel.textContent="第 "+(pos.f+1)+" 层";
   teleBtn.disabled=!hasTele;
 }
 function msg(t){ document.getElementById('msg').textContent=t; }
@@ -552,10 +578,11 @@ function beep(freq,dur,type,vol){
   }catch(e){}
 }
 /* ================= 覆盖层 ================= */
-const OVERLAYS=['intro','dialog','confirm','manual','shop','tele','slots','gameover','ending'];
+const OVERLAYS=['intro','dialog','confirm','manual','shop','tele','dbl','menu','slots','gameover','ending'];
 function show(id){ document.getElementById(id).classList.add('show'); }
 function hide(id){ document.getElementById(id).classList.remove('show'); }
 function overlayOpen(){ return OVERLAYS.some(id=>document.getElementById(id).classList.contains('show')); }
+function openMenu(){ show('menu'); }
 function closeIntro(){ hide('intro'); beep(660,.1,'sine'); }
 function showDialog(t){ document.getElementById('dialogText').textContent=t; show('dialog'); }
 function closeDialog(){ hide('dialog'); }
@@ -576,10 +603,18 @@ function fight(mid,nr,nc){
   float(nr,nc,"-"+dm,"#ff5050",-0.35);
   if(m[4]>0) float(nr,nc,"+"+m[4],"#f0c040",0.35);
   beep(220,.12,'sawtooth');
-  updatePanel(); markDirty();
+  spendStep(); updatePanel(); markDirty();
+  if(dead) return;
   if(st.hp<=0){ die("你砍倒了"+m[0]+",自己也没能站住。"); return; }
   if(mid===BOSS_ID) msg("魔王倒下了!公主就在正上方。");
   else msg("击败 "+m[0]+"!损失 "+dm+" 生命,获得 "+m[4]+" 金币。");
+}
+function spendStep(){
+  steps++;
+  if(phase!=='escape') return;
+  escLeft--;
+  updatePanel();
+  if(escLeft<=0) die("塔塌了。你和公主被埋在里面。");
 }
 function move(dc,dr){
   if(dead||won||overlayOpen()) return;
@@ -591,7 +626,7 @@ function move(dc,dr){
   if(ch==='#') return;
   if(DOOR[ch]){
     const name=DOOR[ch][0], key=DOOR[ch][1];
-    if(st[key]>0){ st[key]--; g[nr][nc]='.'; beep(520,.08); msg("用掉一把钥匙,打开了"+name+"。"); }
+    if(st[key]>0){ st[key]--; g[nr][nc]='.'; beep(520,.08); spendStep(); msg("用掉一把钥匙,打开了"+name+"。"); }
     else msg("需要"+({yk:"黄",bk:"蓝",rk:"红"}[key])+"钥匙!");
     updatePanel(); return;
   }
@@ -602,7 +637,7 @@ function move(dc,dr){
     const col=stat==='hp'?"#ff8080":stat==='atk'?"#ffb054":stat==='def'?"#6ab8ff":"#f0c040";
     float(nr,nc,"+"+val,col); beep(880,.07,'sine');
     msg("获得 "+name+(stat==='hp'?" 生命+"+val:stat==='atk'?" 攻击+"+val:stat==='def'?" 防御+"+val:""));
-    pos={f:pos.f,r:nr,c:nc}; steps++; bob=-2; updatePanel(); return;
+    trail={f:pos.f,r:pos.r,c:pos.c}; pos={f:pos.f,r:nr,c:nc}; bob=-2; spendStep(); updatePanel(); return;
   }
   if(MCH[ch]){
     const mid=MCH[ch], m=MON[mid], dm=calcDmg(mid);
@@ -623,7 +658,7 @@ function move(dc,dr){
     return;
   }
   if(ch==='F'){
-    showDialog("仙子:「勇者,魔王把公主关在塔顶。这本《怪物手册》给你——按 M 随时翻看。\n\n小心那些带特性的家伙:先攻、连击、魔攻、吸血。\n\n还有一句要紧的:塔里的血瓶和宝石,加起来不够你把每只怪都砍了。该绕就绕。」");
+    showDialog("仙子:「勇者,魔王把公主关在塔顶。这本《怪物手册》给你——按 M 随时翻看。\n\n小心那些带特性的家伙:先攻、连击、魔攻、吸血。\n\n还有两句要紧的。一,塔里的血瓶和宝石,加起来不够你把每只怪都砍了,该绕就绕。二,塔中间住着个加倍老人,攻击防御他只肯替你翻一样,想清楚再开口。」");
     g[nr][nc]='.'; hasManual=true; beep(990,.15,'sine'); markDirty();
     return;
   }
@@ -633,31 +668,64 @@ function move(dc,dr){
     showDialog("你捡起了一枚会发光的传送罗盘。\n\n从此可以按 T 直接回到去过的任意楼层。");
     updatePanel(); markDirty(); return;
   }
-  if(ch==='X'){ winGame(); return; }
-  pos={f:pos.f,r:nr,c:nc}; steps++; bob=-2;
+  if(ch==='&'){ dblCell={f:pos.f,r:nr,c:nc}; dblNow.textContent="现在:攻击 "+st.atk+" · 防御 "+st.def; show('dbl'); return; }
+  if(ch==='!'){
+    if(phase==='escape'){ winGame(); }
+    else msg("塔门从外面被封死了。公主还在上面。");
+    return;
+  }
+  if(ch==='X'){ startEscape(); return; }
+  trail={f:pos.f,r:pos.r,c:pos.c}; pos={f:pos.f,r:nr,c:nc}; bob=-2; spendStep();
 }
 function gotoFloor(nf,r,c){
   pos={f:nf,r:r,c:c}; visited[nf]=true;
   buildBg(); updatePanel(); markDirty();
+}
+function doDouble(k){
+  hide('dbl');
+  st[k]*=2; doubled=k;
+  if(dblCell){ floors[dblCell.f][dblCell.r][dblCell.c]='.'; dblCell=null; }
+  beep(300,.1,'triangle'); setTimeout(()=>beep(600,.2,'triangle'),100);
+  float(pos.r,pos.c,(k==='atk'?"攻击":"防御")+"×2",k==='atk'?"#ffb054":"#6ab8ff");
+  msg("老人点了点你的"+(k==='atk'?"剑":"盾")+"——"+(k==='atk'?"攻击":"防御")+"翻倍了。");
+  updatePanel(); markDirty();
+}
+/* 救出公主不是结束:塔开始塌,得带着她跑回一层的塔门 */
+function startEscape(){
+  phase='escape'; escLeft=ESCAPE_STEPS;
+  for(let f=0;f<floors.length;f++) for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const t=floors[f][r][c];
+    // 怪物四散奔逃、门被震开 —— 逃塔只跟步数赛跑,不会被卡死
+    if(MCH[t]||DOOR[t]||t==='X') floors[f][r][c]='.';
+  }
+  trail=null; buildBg(); markDirty(); updatePanel();
+  showDialog("公主:「我就知道你会来。」\n\n话没说完,整座塔剧烈地晃了一下,穹顶开始往下掉石块。\n\n「魔王一死,塔就撑不住了。快,带我下去!」\n\n塔门在第一层。你还有 "+ESCAPE_STEPS+" 步。");
+  beep(160,.5,'sawtooth');
 }
 function winGame(){
   won=true;
   const sec=Math.floor((Date.now()-t0)/1000);
   const mm=String(Math.floor(sec/60)).padStart(2,'0'), ss=String(sec%60).padStart(2,'0');
   document.getElementById('endText').innerHTML=
-    "公主:「我就知道你会来。」<br><br>你牵起公主的手,走下二十层魔塔。<br>阳光照在塔外的原野上。<br><br>—— 全 剧 终 ——<br><br>"
+    "你拽着公主冲出塔门。<br>身后轰然一声,二十层魔塔塌成一片废墟。<br><br>"
+    +"公主喘着气笑了:「你比我想的还慢一点。」<br><br>—— 全 剧 终 ——<br><br>"
+    +"<span style='font-size:12px;color:#8a80a8'>逃出时还剩 "+escLeft+" 步"
+    +(doubled?" · 当年选了"+(doubled==='atk'?"攻击":"防御")+"翻倍":"")+"</span><br>"
     +"<span style='font-size:12px;color:#8a80a8'>生命 "+st.hp+" · 攻击 "+st.atk+" · 防御 "+st.def
     +" · 金币 "+st.gold+"<br>步数 "+steps+" · 用时 "+mm+":"+ss+"</span>";
   show('ending'); beep(523,.15,'triangle'); setTimeout(()=>beep(659,.15,'triangle'),150);
   setTimeout(()=>beep(784,.3,'triangle'),300);
 }
 /* ================= 商店 ================= */
-const SHOP=[["生命 +500",20,()=>st.hp+=500],["攻击 +4",30,()=>st.atk+=4],["防御 +4",30,()=>st.def+=4]];
-function price(i){ return Math.floor(SHOP[i][1]*Math.pow(1.5,shopCnt[i])); }
+/* 商店按当前属性的百分比给 —— 固定 +4 到了后期一颗宝石就 +91,钱花了等于没花 */
+const SHOP_BASE=80, SHOP_STEP=1.6;
+const SHOP=[["生命",'hp',0.15],["攻击",'atk',0.06],["防御",'def',0.06]];
+function shopGain(i){ return Math.max(1,Math.ceil(st[SHOP[i][1]]*SHOP[i][2])); }
+function price(i){ return Math.floor(SHOP_BASE*Math.pow(SHOP_STEP,shopCnt[i])); }
 function openShop(){
   for(let i=0;i<3;i++){
     const b=document.getElementById('b'+i);
-    b.textContent=SHOP[i][0]+" ("+price(i)+"金)";
+    b.textContent=SHOP[i][0]+" +"+shopGain(i)+"（"+price(i)+"金）";
     b.disabled=st.gold<price(i);
   }
   shopGold.textContent="你的金币:"+st.gold;
@@ -666,7 +734,7 @@ function openShop(){
 function buy(i){
   const p=price(i);
   if(st.gold<p){ beep(140,.1); return; }
-  st.gold-=p; SHOP[i][2](); shopCnt[i]++;
+  st.gold-=p; st[SHOP[i][1]]+=shopGain(i); shopCnt[i]++;
   beep(880,.08,'sine'); updatePanel(); markDirty(); openShop();
 }
 /* ================= 手册 ================= */
@@ -725,8 +793,13 @@ function openTele(){
     b.onclick=()=>{
       const p=findTile(f,'D')||findTile(f,'U');
       if(!p){ msg("那一层没有落脚点。"); return; }
-      hide('tele'); gotoFloor(f,p.r,p.c);
-      beep(1000,.1,'sine'); msg("传送到第 "+(f+1)+" 层。");
+      hide('tele');
+      if(phase==='escape'){
+        escLeft-=TELE_COST;
+        gotoFloor(f,p.r,p.c); beep(1000,.1,'sine');
+        msg("传送到第 "+(f+1)+" 层,塔在晃,这一下花了 "+TELE_COST+" 步。");
+        if(escLeft<=0){ die("传送阵在半路塌了。"); return; }
+      } else { gotoFloor(f,p.r,p.c); beep(1000,.1,'sine'); msg("传送到第 "+(f+1)+" 层。"); }
     };
     grid.appendChild(b);
   }
@@ -763,7 +836,7 @@ function saveGame(i){
   try{
     const now=new Date();
     localStorage.setItem(SLOTKEY(i),JSON.stringify({
-      floors:floors.map(f=>f.map(r=>r.join(''))),pos,st,maxHp,hasManual,hasTele,visited,shopCnt,steps,
+      floors:floors.map(f=>f.map(r=>r.join(''))),pos,st,maxHp,hasManual,hasTele,visited,shopCnt,steps,phase,escLeft,trail,doubled,
       elapsed:Date.now()-t0,
       when:now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0')
            +" "+String(now.getHours()).padStart(2,'0')+":"+String(now.getMinutes()).padStart(2,'0')}));
@@ -779,8 +852,9 @@ function loadGame(i){
     hasManual=d.hasManual; hasTele=!!d.hasTele;
     visited=d.visited||floors.map(()=>true);
     shopCnt=d.shopCnt; steps=d.steps||0; t0=Date.now()-(d.elapsed||0);
+    phase=d.phase||'climb'; escLeft=d.escLeft||0; trail=d.trail||null; doubled=d.doubled||null;
     dead=false; won=false;
-    ['ending','gameover','confirm','tele','shop','manual'].forEach(hide);
+    ['ending','gameover','confirm','tele','shop','manual','dbl','menu'].forEach(hide);
     buildBg(); updatePanel(); markDirty();
     msg("已读取槽 "+i+"。"); beep(700,.08,'sine');
   }catch(e){ msg("读档失败。"); }
@@ -798,26 +872,44 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&k==='s'){ e.preventDefault(); openSlots('save'); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(KEYMAP[k]){ e.preventDefault(); move(KEYMAP[k][0],KEYMAP[k][1]); return; }
-  if(k==='escape'){ e.preventDefault(); ['manual','shop','tele','confirm'].forEach(hide); closeSlots(); return; }
+  if(k==='escape'){ e.preventDefault(); ['manual','shop','tele','menu','confirm'].forEach(hide); closeSlots(); return; }
   if(overlayOpen()) return;
   if(k==='m') showManual();
   else if(k==='t') openTele();
   else if(k==='l') openSlots('load');
 });
 /* ---- 方向键:按下即走,长按连续走 ---- */
-let padHold=null, padRep=null;
-function padStop(){ if(padHold) clearTimeout(padHold); if(padRep) clearInterval(padRep); padHold=padRep=null; }
+let padHold=null, padRep=null, lastPad=0;
+const PAD_GUARD_MS=350;          // 刚戳过方向键的这段时间内,上方按钮当误触忽略
+function padStop(){
+  if(padHold) clearTimeout(padHold);
+  if(padRep) clearInterval(padRep);
+  padHold=padRep=null; lastPad=Date.now();
+}
 document.querySelectorAll('#dpad button').forEach(b=>{
-  const go=()=>{ const p=b.dataset.d.split(',').map(Number); move(p[0],p[1]); };
+  const go=()=>{ lastPad=Date.now(); const p=b.dataset.d.split(',').map(Number); move(p[0],p[1]); };
   b.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    if(b.setPointerCapture) { try{ b.setPointerCapture(e.pointerId); }catch(err){} }
+    if(e.preventDefault) e.preventDefault();
+    if(b.setPointerCapture&&e.pointerId!==undefined){ try{ b.setPointerCapture(e.pointerId); }catch(err){} }
     padStop(); go();
     padHold=setTimeout(()=>{ padRep=setInterval(go,130); },300);
   });
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,padStop));
 });
 window.addEventListener('blur',padStop);
+/* 手指从方向键往上滑出去,很容易蹭到手册/传送/菜单,这里把这类点击吃掉 */
+function padGuard(e){
+  if(Date.now()-lastPad>=PAD_GUARD_MS) return false;
+  if(e&&e.preventDefault) e.preventDefault();
+  if(e&&e.stopPropagation) e.stopPropagation();
+  msg("刚按过方向键,这下当误触忽略了。再点一次就行。");
+  return true;
+}
+document.getElementById('controls').addEventListener('click',e=>{
+  const t=e&&e.target;
+  if(t&&t.closest&&!t.closest('.btnRow')) return;
+  padGuard(e);
+},true);
 
 /* ================= 移动端 / 平板适配 ================= */
 const TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints||0)>0 ||
@@ -836,8 +928,8 @@ function vpSize(){
 function setCW(w){ document.documentElement.style.setProperty('--cw',w+'px'); }
 function applyWidth(availCss){
   const cap=Math.max(120,Math.min(availCss,MAXCSS));
-  let tile=Math.floor(cap*DPR/(N*8))*8;              // 每格的设备像素,8 的倍数
-  tile=Math.max(16,tile);
+  let tile=Math.floor(cap*DPR/(N*SPRITE))*SPRITE;    // 每格的设备像素,取精灵边长的整数倍
+  tile=Math.max(SPRITE,tile);
   setCanvasSize(tile*N);
   setCW(devW/DPR);   // 允许小数,保证 CSS 尺寸乘 DPR 后正好落在设备像素上
 }
